@@ -1,0 +1,58 @@
+import { create } from "zustand";
+import type { PlaceMarker } from "../types";
+
+interface SearchState {
+  searchId: number | null;
+  status: "idle" | "running" | "completed" | "failed" | "cancelled";
+  totalCells: number;
+  completedCells: number;
+  totalPlaces: number;
+  markers: PlaceMarker[];
+
+  startSearch: (id: number, totalCells: number) => void;
+  updateProgress: (completedCells: number, totalPlaces: number) => void;
+  addMarker: (marker: PlaceMarker) => void;
+  setCompleted: (totalPlaces: number) => void;
+  setFailed: (error: string) => void;
+  reset: () => void;
+}
+
+export const useSearchStore = create<SearchState>((set) => ({
+  searchId: null,
+  status: "idle",
+  totalCells: 0,
+  completedCells: 0,
+  totalPlaces: 0,
+  markers: [],
+
+  startSearch: (id, totalCells) =>
+    set({
+      searchId: id,
+      status: "running",
+      totalCells,
+      completedCells: 0,
+      totalPlaces: 0,
+      markers: [],
+    }),
+
+  updateProgress: (completedCells, totalPlaces) =>
+    set({ completedCells, totalPlaces }),
+
+  addMarker: (marker) =>
+    set((state) => ({ markers: [...state.markers, marker] })),
+
+  setCompleted: (totalPlaces) =>
+    set({ status: "completed", totalPlaces }),
+
+  setFailed: () => set({ status: "failed" }),
+
+  reset: () =>
+    set({
+      searchId: null,
+      status: "idle",
+      totalCells: 0,
+      completedCells: 0,
+      totalPlaces: 0,
+      markers: [],
+    }),
+}));
