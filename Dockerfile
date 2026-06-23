@@ -5,9 +5,9 @@ COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm ci
 COPY frontend/ ./
 ARG VITE_GOOGLE_MAPS_KEY=""
-ARG VITE_API_URL=""
+ARG VITE_NEON_AUTH_URL=""
 ENV VITE_GOOGLE_MAPS_KEY=$VITE_GOOGLE_MAPS_KEY
-ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_NEON_AUTH_URL=$VITE_NEON_AUTH_URL
 RUN npm run build
 
 # Stage 2: Python backend + frontend dist
