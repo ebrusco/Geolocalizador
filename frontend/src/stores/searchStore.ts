@@ -8,6 +8,7 @@ interface SearchState {
   completedCells: number;
   totalPlaces: number;
   markers: PlaceMarker[];
+  errorMessage: string | null;
 
   startSearch: (id: number, totalCells: number) => void;
   updateProgress: (completedCells: number, totalPlaces: number) => void;
@@ -24,6 +25,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   completedCells: 0,
   totalPlaces: 0,
   markers: [],
+  errorMessage: null,
 
   startSearch: (id, totalCells) =>
     set({
@@ -33,6 +35,7 @@ export const useSearchStore = create<SearchState>((set) => ({
       completedCells: 0,
       totalPlaces: 0,
       markers: [],
+      errorMessage: null,
     }),
 
   updateProgress: (completedCells, totalPlaces) =>
@@ -44,7 +47,7 @@ export const useSearchStore = create<SearchState>((set) => ({
   setCompleted: (totalPlaces) =>
     set({ status: "completed", totalPlaces }),
 
-  setFailed: () => set({ status: "failed" }),
+  setFailed: (error) => set({ status: "failed", errorMessage: error }),
 
   reset: () =>
     set({
@@ -54,5 +57,6 @@ export const useSearchStore = create<SearchState>((set) => ({
       completedCells: 0,
       totalPlaces: 0,
       markers: [],
+      errorMessage: null,
     }),
 }));

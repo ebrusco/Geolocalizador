@@ -1,3 +1,4 @@
+import logging
 import time
 
 import app.database as db
@@ -6,8 +7,11 @@ from fastapi import HTTPException, Request
 
 from app.config import settings
 
-_cache: dict[str, tuple[dict, float]] = {}
+logger = logging.getLogger(__name__)
+
+_CACHE_MAX_SIZE = 1000
 _CACHE_TTL = 300
+_cache: dict[str, tuple[dict, float]] = {}
 
 _allowed_cache: tuple[set[str], float] = (set(), 0.0)
 _ALLOWED_TTL = 60
@@ -18,6 +22,13 @@ _SESSION_QUERY = """
     JOIN neon_auth."user" u ON u.id = s."userId"
     WHERE s.token = $1 AND s."expiresAt" > NOW()
 """
+
+
+def _evict_expired():
+    now = time.time()
+    expired = [k for k, (_, ts) in _cache.items() if now - ts >= _CACHE_TTL]
+    for k in expired:
+        del _cache[k]
 
 
 def _get_admin_emails() -> set[str]:
@@ -50,14 +61,22 @@ def invalidate_allowed_cache():
 
 
 async def get_current_user(request: Request) -> dict:
-    if not settings.neon_auth_url or not db.is_connected():
+    if not settings.neon_auth_url:
+        return {"id": "local", "email": "local@dev", "name": "Dev"}
+
+    if not db.is_connected():
+        if settings.environment == "production":
+            raise HTTPException(503, "Servicio temporalmente no disponible")
         return {"id": "local", "email": "local@dev", "name": "Dev"}
 
     auth = request.headers.get("Authorization", "")
-    if not auth.startswith("Bearer "):
-        raise HTTPException(401, "Token requerido")
+    if auth.startswith("Bearer "):
+        token = auth[7:]
+    else:
+        token = request.query_params.get("token")
 
-    token = auth[7:]
+    if not token:
+        raise HTTPException(401, "Token requerido")
 
     now = time.time()
     if token in _cache:
@@ -76,6 +95,8 @@ async def get_current_user(request: Request) -> dict:
     if allowed and user["email"].lower() not in allowed:
         raise HTTPException(403, "No tenés acceso a esta aplicación")
 
+    if len(_cache) >= _CACHE_MAX_SIZE:
+        _evict_expired()
     _cache[token] = (user, now)
     return user
 

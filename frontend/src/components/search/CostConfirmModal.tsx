@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Zap } from "lucide-react";
 import type { SearchEstimate } from "../../types";
 
@@ -12,6 +12,14 @@ interface Props {
 
 export function CostConfirmModal({ estimate, territorio, keywords, onConfirm, onCancel }: Props) {
   const [firstConfirmed, setFirstConfirmed] = useState(false);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [onCancel]);
   const isRed = estimate.level === "red";
   const isGreen = estimate.level === "green";
   const hasFreeCredit = estimate.covered_by_free > 0;

@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import re
+import socket
 from collections.abc import Callable
 from urllib.parse import urljoin, urlparse
 
@@ -18,6 +20,23 @@ SKIP_EMAILS = {
 }
 
 CONTACT_PATHS = ["/contacto", "/contact", "/about", "/nosotros", "/about-us"]
+
+
+def _is_safe_url(url: str) -> bool:
+    parsed = urlparse(url)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    try:
+        for info in socket.getaddrinfo(hostname, None, socket.AF_UNSPEC, socket.SOCK_STREAM):
+            ip = ipaddress.ip_address(info[4][0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
+                return False
+    except (socket.gaierror, ValueError, OSError):
+        return False
+    return True
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -59,6 +78,9 @@ async def scrape_email(client: httpx.AsyncClient, website: str) -> str | None:
     parsed = urlparse(website)
     if not parsed.scheme:
         website = "https://" + website
+
+    if not _is_safe_url(website):
+        return None
 
     html = await _fetch_page(client, website)
     if not html:

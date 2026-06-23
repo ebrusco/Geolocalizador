@@ -41,6 +41,9 @@ Run `backend/app/db/migrations/001_initial.sql` in the Supabase SQL editor.
 - `GOOGLE_API_KEY` — server-side key for Places API (New) + Geocoding
 - `DATABASE_URL` — PostgreSQL connection string
 - `FRONTEND_URL` — CORS origin (default: http://localhost:5173)
+- `NEON_AUTH_URL` — Neon Auth URL (empty = auth disabled)
+- `ALLOWED_EMAILS` — admin emails, comma-separated
+- `ENVIRONMENT` — `development` or `production` (controls auth-fail behavior)
 
 ### Frontend (`frontend/.env`)
 - `VITE_GOOGLE_MAPS_KEY` — Maps JavaScript API key (frontend display only)

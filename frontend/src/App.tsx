@@ -49,6 +49,8 @@ function AppContent() {
   const toggleLeft = useUIStore((s) => s.toggleLeftPanel);
   const toggleRight = useUIStore((s) => s.toggleRightPanel);
 
+  const addToast = useUIStore((s) => s.addToast);
+
   const clearRefinement = async () => {
     storeClearRefinement();
     if (geojson) {
@@ -56,7 +58,7 @@ function AppContent() {
         const result = await getGridPolygon(geojson, radiusM);
         setCells(result.cells, result.h3_resolution);
       } catch {
-        // silent
+        addToast("Error al recalcular grilla", "error");
       }
     }
   };
@@ -273,13 +275,18 @@ function AuthGate() {
 
   useEffect(() => {
     if (token && loading) {
+      let cancelled = false;
       getSession(token).then((res) => {
+        if (cancelled) return;
         if (res?.token && res?.user) {
           setAuth(res.user, res.token);
         } else {
           clearAuth();
         }
+      }).catch(() => {
+        if (!cancelled) clearAuth();
       });
+      return () => { cancelled = true; };
     }
   }, []);
 

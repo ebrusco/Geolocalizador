@@ -1,24 +1,31 @@
+import { useRef } from "react";
 import { useTerritoryStore } from "../../stores/territoryStore";
+import { useUIStore } from "../../stores/uiStore";
 import { getGrid, getGridPolygon } from "../../api/territories";
 
 export function RadiusSlider() {
   const { radiusM, setRadius, bounds, setCells } = useTerritoryStore();
   const activeGeo = useTerritoryStore((s) => s.activeGeojson());
+  const addToast = useUIStore((s) => s.addToast);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleChange = async (val: number) => {
+  const handleChange = (val: number) => {
     setRadius(val);
 
-    try {
-      if (activeGeo) {
-        const result = await getGridPolygon(activeGeo, val);
-        setCells(result.cells, result.h3_resolution);
-      } else if (bounds) {
-        const result = await getGrid(bounds, val);
-        setCells(result.cells, result.h3_resolution);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        if (activeGeo) {
+          const result = await getGridPolygon(activeGeo, val);
+          setCells(result.cells, result.h3_resolution);
+        } else if (bounds) {
+          const result = await getGrid(bounds, val);
+          setCells(result.cells, result.h3_resolution);
+        }
+      } catch {
+        addToast("Error al recalcular grilla", "error");
       }
-    } catch {
-      // silent
-    }
+    }, 300);
   };
 
   return (

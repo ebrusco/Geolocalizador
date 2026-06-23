@@ -21,7 +21,7 @@ export function ProfileSelector({ onSelect, currentKeywords, disabled }: Props) 
       const data = await listProfiles();
       setProfiles(data);
     } catch {
-      // silent
+      addToast("Error al cargar perfiles", "error");
     }
   };
 

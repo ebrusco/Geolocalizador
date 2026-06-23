@@ -114,11 +114,7 @@ def normalize_place(raw: dict, keyword: str, territorio: str) -> dict:
     editorial = raw.get("editorialSummary", {})
     photos = raw.get("photos", [])
     photo_name = photos[0].get("name", "") if photos else ""
-    photo_url = (
-        f"https://places.googleapis.com/v1/{photo_name}/media"
-        f"?maxWidthPx=400&key={settings.google_api_key}"
-        if photo_name else None
-    )
+    photo_url = f"/api/v1/photos?ref={photo_name}" if photo_name else None
 
     return {
         "google_place_id": raw.get("id", ""),

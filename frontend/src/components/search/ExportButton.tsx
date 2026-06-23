@@ -1,8 +1,9 @@
 import { useState, useRef } from "react";
 import { Download, Mail, Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
 import { useSearchStore } from "../../stores/searchStore";
+import { useUIStore } from "../../stores/uiStore";
 import {
-  exportSearchUrl,
+  downloadExport,
   scrapeEmails,
   type EmailScrapeProgress,
   type EmailScrapeResult,
@@ -14,12 +15,25 @@ type ScrapeStatus = "idle" | "scraping" | "done" | "error";
 export function ExportButton() {
   const { searchId, status, totalPlaces } = useSearchStore();
   const [format, setFormat] = useState<ExportFormat>("xlsx");
+  const [downloading, setDownloading] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState<ScrapeStatus>("idle");
   const [progress, setProgress] = useState<EmailScrapeProgress | null>(null);
   const [result, setResult] = useState<EmailScrapeResult | null>(null);
   const cancelRef = useRef<(() => void) | null>(null);
+  const addToast = useUIStore((s) => s.addToast);
 
   if (status !== "completed" || !searchId || totalPlaces === 0) return null;
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      await downloadExport(searchId, format);
+    } catch {
+      addToast("Error al descargar archivo", "error");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   const startScraping = () => {
     setScrapeStatus("scraping");
@@ -67,16 +81,17 @@ export function ExportButton() {
         </button>
       </div>
 
-      <a
-        href={exportSearchUrl(searchId, format)}
-        download
+      <button
+        onClick={handleDownload}
+        disabled={downloading}
         className="flex items-center justify-center gap-2 w-full bg-[#4285F4] text-white rounded-lg
-                   px-4 py-2.5 text-sm font-semibold no-underline hover:bg-[#3367D6] transition-colors"
+                   px-4 py-2.5 text-sm font-semibold hover:bg-[#3367D6] transition-colors
+                   cursor-pointer border-none disabled:opacity-60"
       >
-        <Download size={16} />
+        {downloading ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
         Descargar {totalPlaces} negocios
         {emailsDone ? ` · ${result.found} emails` : ""}
-      </a>
+      </button>
 
       {scrapeStatus === "idle" && (
         <button

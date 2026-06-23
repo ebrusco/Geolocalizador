@@ -1,5 +1,25 @@
-export function exportSearchUrl(searchId: number, format = "xlsx"): string {
-  return `/api/v1/searches/${searchId}/export?format=${format}`;
+import { useAuthStore } from "../stores/authStore";
+
+function getAuthHeaders(): Record<string, string> {
+  const token = useAuthStore.getState().token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+export async function downloadExport(searchId: number, format = "xlsx"): Promise<void> {
+  const url = `/api/v1/searches/${searchId}/export?format=${format}`;
+  const resp = await fetch(url, { headers: getAuthHeaders() });
+  if (!resp.ok) throw new Error("Error al descargar");
+  const blob = await resp.blob();
+  const disposition = resp.headers.get("Content-Disposition") || "";
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `export.${format}`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
 }
 
 export interface EmailScrapeProgress {
@@ -23,6 +43,7 @@ export function scrapeEmails(
 
   fetch(`/api/v1/searches/${searchId}/scrape-emails`, {
     method: "POST",
+    headers: getAuthHeaders(),
     signal: ctrl.signal,
   }).then(async (resp) => {
     if (!resp.ok || !resp.body) {

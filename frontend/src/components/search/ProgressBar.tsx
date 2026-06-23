@@ -2,7 +2,7 @@ import { Loader2, CheckCircle2, XCircle, Ban } from "lucide-react";
 import { useSearchStore } from "../../stores/searchStore";
 
 export function ProgressBar() {
-  const { status, completedCells, totalCells, totalPlaces } = useSearchStore();
+  const { status, completedCells, totalCells, totalPlaces, errorMessage } = useSearchStore();
 
   if (status === "idle") return null;
 
@@ -40,6 +40,11 @@ export function ProgressBar() {
           {totalPlaces} negocios
         </span>
       </div>
+      {status === "failed" && errorMessage && (
+        <p className="text-xs text-[#EA4335] bg-red-50 rounded-lg px-3 py-2 mt-2">
+          {errorMessage}
+        </p>
+      )}
     </div>
   );
 }

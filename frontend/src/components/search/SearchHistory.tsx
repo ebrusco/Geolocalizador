@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 import { CheckCircle2, Loader2, XCircle, Ban, Clock, Download } from "lucide-react";
 import { listSearches } from "../../api/searches";
-import { exportSearchUrl } from "../../api/exports";
+import { downloadExport } from "../../api/exports";
+import { useUIStore } from "../../stores/uiStore";
 import type { Search } from "../../types";
 
 export function SearchHistory() {
   const [searches, setSearches] = useState<Search[]>([]);
   const [loading, setLoading] = useState(true);
+  const addToast = useUIStore((s) => s.addToast);
 
   const load = async () => {
     try {
       const data = await listSearches();
       setSearches(data.searches);
     } catch {
-      // silent
+      addToast("Error al cargar historial", "error");
     } finally {
       setLoading(false);
     }
@@ -52,15 +54,21 @@ export function SearchHistory() {
               {s.keywords.join(", ")} · {s.total_places} resultados
             </div>
             {s.status === "completed" && s.total_places > 0 && (
-              <a
-                href={exportSearchUrl(s.id)}
-                download
+              <button
+                onClick={async () => {
+                  try {
+                    await downloadExport(s.id);
+                  } catch {
+                    addToast("Error al descargar", "error");
+                  }
+                }}
                 className="inline-flex items-center gap-1 mt-1 text-xs text-[#4285F4]
-                           hover:text-[#3367D6] no-underline transition-colors"
+                           hover:text-[#3367D6] transition-colors cursor-pointer
+                           bg-transparent border-none p-0"
               >
                 <Download size={12} />
                 Descargar
-              </a>
+              </button>
             )}
           </div>
         );

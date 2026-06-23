@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timezone
 
 import httpx
@@ -11,6 +12,8 @@ from app.services import places_client
 from app.services.grid import generate_cells, generate_cells_from_geojson
 from app.services.progress_tracker import tracker
 from app.models.territory import Bounds
+
+logger = logging.getLogger(__name__)
 
 
 class SearchRegistry:
@@ -99,14 +102,14 @@ async def _persist_search(search_id: int, entry: dict):
             completed_at=entry["completed_at"],
         )
 
-        place_keyword_pairs: list[tuple[int, str]] = []
-        for place in entry["places"]:
-            place_id = await places_repo.upsert(db.pool, place)
-            place_keyword_pairs.append((place_id, place.get("keyword", "")))
-
+        place_ids = await places_repo.upsert_batch(db.pool, entry["places"])
+        place_keyword_pairs = [
+            (pid, entry["places"][i].get("keyword", ""))
+            for i, pid in enumerate(place_ids)
+        ]
         await places_repo.add_search_results_batch(db.pool, search_id, place_keyword_pairs)
     except Exception as e:
-        print(f"Warning: failed to persist search {search_id}: {e}")
+        logger.error("Failed to persist search %s: %s", search_id, e)
 
 
 async def run_search(search_id: int):

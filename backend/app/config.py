@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     neon_auth_url: str = ""
     allowed_emails: str = ""
+    environment: str = "development"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

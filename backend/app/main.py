@@ -1,13 +1,17 @@
+import os
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from app.config import settings
 import app.database as db
 from app.database import init_pool, close_pool, run_migrations
 from app.auth.dependencies import get_current_user
-from app.api import territories, searches, places, exports, keyword_profiles, usage, allowed_emails
+from app.api import territories, searches, places, exports, keyword_profiles, usage, allowed_emails, photos
 
 
 @asynccontextmanager
@@ -59,6 +63,7 @@ app.include_router(exports.router, prefix="/api/v1", tags=["exports"], dependenc
 app.include_router(keyword_profiles.router, prefix="/api/v1/keyword-profiles", tags=["keyword-profiles"], dependencies=auth_dep)
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"], dependencies=auth_dep)
 app.include_router(allowed_emails.router, prefix="/api/v1/allowed-emails", tags=["allowed-emails"], dependencies=auth_dep)
+app.include_router(photos.router, prefix="/api/v1", tags=["photos"], dependencies=auth_dep)
 
 
 @app.get("/api/v1/me")
@@ -68,5 +73,17 @@ async def me(user: dict = Depends(get_current_user)):
 
 @app.get("/health")
 async def health():
-    from app.database import is_connected
-    return {"status": "ok", "version": "2.0.0", "database": is_connected(), "auth": bool(settings.neon_auth_url)}
+    return {"status": "ok", "version": "2.0.0"}
+
+
+# Serve frontend static files in production (Docker build copies dist to /app/static)
+_static_dir = Path(__file__).resolve().parent.parent / "static"
+if _static_dir.is_dir():
+    app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = _static_dir / full_path
+        if file_path.is_file():
+            return FileResponse(file_path)
+        return FileResponse(_static_dir / "index.html")

@@ -3,7 +3,7 @@ import {
   InfoWindow,
   useAdvancedMarkerRef,
 } from "@vis.gl/react-google-maps";
-import { useState, useCallback } from "react";
+import { useState, useCallback, memo } from "react";
 import { Star, MapPin, ExternalLink } from "lucide-react";
 import { useSearchStore } from "../../stores/searchStore";
 import type { PlaceMarker } from "../../types";
@@ -23,7 +23,7 @@ function getColor(keyword: string): string {
   return colorMap.get(keyword)!;
 }
 
-function MarkerItem({ place }: { place: PlaceMarker }) {
+const MarkerItem = memo(function MarkerItem({ place }: { place: PlaceMarker }) {
   const [open, setOpen] = useState(false);
   const [markerRef, marker] = useAdvancedMarkerRef();
   const color = getColor(place.keyword);
@@ -79,7 +79,7 @@ function MarkerItem({ place }: { place: PlaceMarker }) {
       )}
     </>
   );
-}
+});
 
 export function PlaceMarkers() {
   const markers = useSearchStore((s) => s.markers);
