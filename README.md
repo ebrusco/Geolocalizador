@@ -264,35 +264,71 @@ Si `NEON_AUTH_URL` está vacío, la auth se desactiva completamente. Todas las r
 
 ## Deployment (Railway)
 
-### Estructura recomendada
+### Arquitectura de deploy
 
-Crear 2 servicios en Railway:
+**Un solo servicio** con Dockerfile multi-stage:
+1. **Stage 1** (Node.js): Compila el frontend con Vite → genera `/dist`
+2. **Stage 2** (Python): Instala backend + copia `/dist` a `/static` → FastAPI sirve todo
 
-**1. Backend (Python)**
+El backend sirve el frontend como archivos estáticos + GZip middleware para compresión.
+
+### URL de producción
+
 ```
-Root Directory: backend
-Build Command: pip install -e . && pip install email-validator
-Start Command: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-```
-
-Variables de entorno:
-- `GOOGLE_API_KEY`, `DATABASE_URL`, `NEON_AUTH_URL`, `ALLOWED_EMAILS`
-- `FRONTEND_URL` = URL del frontend en Railway
-- `ENVIRONMENT` = `production`
-
-**2. Frontend (Node.js)**
-```
-Root Directory: frontend
-Build Command: npm install && npm run build
-Start Command: npx serve dist -s -l $PORT
+https://geolocalizador-production-16cb.up.railway.app
 ```
 
-Variables de entorno:
-- `VITE_GOOGLE_MAPS_KEY`
+### Variables de entorno en Railway
+
+```env
+GOOGLE_API_KEY=AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA
+DATABASE_URL=postgresql://neondb_owner:npg_nGWpi76kMJNh@ep-lingering-wave-ac0gw483.sa-east-1.aws.neon.tech/neondb?sslmode=require
+NEON_AUTH_URL=https://ep-lingering-wave-ac0gw483.neonauth.sa-east-1.aws.neon.tech/neondb/auth
+ALLOWED_EMAILS=bruscofacundo1@gmail.com
+ENVIRONMENT=production
+PORT=8000
+FRONTEND_URL=https://geolocalizador-production-16cb.up.railway.app
+VITE_GOOGLE_MAPS_KEY=AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA
+VITE_NEON_AUTH_URL=https://ep-lingering-wave-ac0gw483.neonauth.sa-east-1.aws.neon.tech/neondb/auth
+```
+
+> **Nota**: `VITE_GOOGLE_MAPS_KEY` y `VITE_NEON_AUTH_URL` son build args — se inyectan al frontend durante la compilación via el Dockerfile.
+
+### Dockerfile
+
+El `Dockerfile` en la raíz del repo:
+- Instala deps del frontend y ejecuta `npm run build`
+- Instala deps de Python desde `pyproject.toml`
+- Copia el build del frontend a `/app/static`
+- Uvicorn escucha en puerto 8000
+- GZip middleware comprime assets estáticos (~563KB JS → ~150KB)
 
 ### Base de datos
 
-Usar Neon (free tier) como base de datos. Railway no incluye PostgreSQL gratis.
+PostgreSQL en **Neon** (free tier). Railway no incluye PostgreSQL gratis.
+- Proyecto: `ep-lingering-wave-ac0gw483` (sa-east-1)
+- Database: `neondb`
+- Auth: Neon Auth (Better Auth) habilitado
+
+### Cuenta de acceso
+
+- **Email**: bruscofacundo1@gmail.com
+- **Contraseña**: ProspectoAI2024!
+- **Rol**: Admin (puede gestionar whitelist de emails)
+
+### Cómo re-deployar
+
+```bash
+git push origin main
+# Railway detecta el push y hace build + deploy automático
+```
+
+### Troubleshooting
+
+- **Página en blanco**: El JS bundle es ~563KB. En Railway free tier puede tardar unos segundos en cargar. Hacer hard refresh (Ctrl+Shift+R).
+- **Auth error 405**: Verificar que `VITE_NEON_AUTH_URL` está configurada en Railway. Sin ella, el login va al backend en vez de a Neon Auth.
+- **Build falla con TypeScript**: Necesita `@types/google.maps` en devDependencies del frontend.
+- **CORS errors**: Verificar que `FRONTEND_URL` en Railway coincide exactamente con la URL pública del servicio (con `https://`).
 
 ---
 
@@ -411,6 +447,8 @@ Geolocalizador/
 │   │   └── App.tsx                 # Layout principal + AuthGate
 │   ├── .env.example
 │   └── package.json
+├── Dockerfile                      # Multi-stage build (Node + Python)
+├── .dockerignore                   # Excluye node_modules, venv, .env, etc.
 ├── CLAUDE.md                       # Instrucciones para Claude Code
 ├── .gitignore
 └── README.md                       # Este archivo
@@ -434,6 +472,59 @@ Geolocalizador/
 - Costo por llamada: ~$0.007 USD
 - La app trackea el uso y muestra crédito restante en el panel de control
 - El modal de confirmación pre-búsqueda muestra el costo estimado con semáforo verde/amarillo/rojo
+
+### Cuotas actuales (al 23/06/2026)
+
+| API | Límite diario | Límite/min | Uso actual |
+|-----|--------------|------------|------------|
+| SearchTextRequest | 50,000 | 600 | 235 (0.47%) |
+| AutocompletePlacesRequest | 150,000 | 12,000 | 0 |
+| GetPhotoMediaRequest | 150,000 | 600 | 0 |
+| GetPlaceRequest | 100,000 | 600 | 0 |
+| SearchNearbyRequest | 50,000 | 600 | 0 |
+| SearchMediaRequest | Ilimitado | 600 | 0 |
+
+ProspectoAI usa principalmente **SearchTextRequest**. Con ~20 requests por hexágono, el límite diario permite ~2,500 búsquedas de hexágono por día.
+
+---
+
+---
+
+## Cuentas y servicios externos
+
+| Servicio | Propósito | Cuenta |
+|----------|-----------|--------|
+| **GitHub** | Repositorio de código | ebrusco — github.com/ebrusco/Geolocalizador |
+| **Railway** | Hosting del backend + frontend | ebrusco — geolocalizador-production-16cb.up.railway.app |
+| **Neon** | PostgreSQL serverless + Auth | ep-lingering-wave-ac0gw483 (sa-east-1) |
+| **Google Cloud** | Places API, Geocoding API, Maps JS API | Proyecto con API key AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA |
+
+---
+
+## Planes futuros (V3)
+
+### Funcionalidades
+
+- [ ] **Google OAuth** — Login con Google además de email/password
+- [ ] **Búsquedas concurrentes** — Semáforo para múltiples celdas en paralelo (actualmente secuencial)
+- [ ] **Búsqueda por categoría** — Además de keywords, filtrar por tipos de Google Places
+- [ ] **Mapa de calor** — Visualizar densidad de resultados por zona
+- [ ] **Historial mejorado** — Filtros, paginación, búsqueda por localidad
+- [ ] **Multi-territorio** — Buscar en varios territorios a la vez
+- [ ] **Dashboard de analytics** — Métricas de uso histórico, tendencias
+- [ ] **Multi-usuario** — Equipos con roles (admin, usuario, viewer)
+- [ ] **API pública** — REST API para integrar con otros sistemas
+
+### Mejoras técnicas (de la auditoría)
+
+- [ ] Migrar a TanStack Query (ya instalado, no usado)
+- [ ] Unificar clientes HTTP (axios, fetch, authFetch)
+- [ ] Tests (auth flow, search engine, places client)
+- [ ] Purga automática de UsageTracker en memoria
+- [ ] TTL en SearchRegistry para limpiar búsquedas completadas
+- [ ] Índice compuesto `(search_id, found_at)` en search_results
+- [ ] Accesibilidad: aria-labels en botones de icono
+- [ ] Responsive design para móviles
 
 ---
 
