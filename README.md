@@ -503,17 +503,34 @@ ProspectoAI usa principalmente **SearchTextRequest**. Con ~20 requests por hexá
 
 ## Planes futuros (V3)
 
-### Funcionalidades
+### Funcionalidades dentro de la app
 
+#### Alta prioridad (mayor impacto en usabilidad)
+
+- [ ] **Filtros sobre resultados** — Filtrar por rating (>4 estrellas), cantidad de reviews, "tiene teléfono", "tiene web", "tiene email". Esencial cuando una búsqueda devuelve 200+ resultados.
+- [ ] **Detalle de negocio en marker** — Click en marker abre panel con toda la info: nombre, dirección, teléfono clickeable (`tel:`), link al sitio web, rating con estrellas, foto, botón "abrir en Google Maps". Hoy los markers no hacen nada al clickearlos.
+- [ ] **Vista tabla + mapa lado a lado** — Tabla ordenable/filtrable al costado del mapa. Click en fila → zoom al marker. Click en marker → resalta la fila. Actualmente solo hay markers sin listado.
+- [ ] **Selección parcial en export** — Checkboxes para exportar solo los negocios que interesan, no los 300 de golpe. O exportar solo los que pasan el filtro activo.
+
+#### Media prioridad (diferenciación del producto)
+
+- [ ] **Territorios guardados** — Guardar "Zona Sur Bernal" como territorio reutilizable con nombre, no tener que buscarlo cada vez que se usa la app.
+- [ ] **Mapa de densidad** — Pintar hexágonos por cantidad de resultados (verde = pocos negocios, rojo = zona saturada). Sirve para encontrar zonas con poca competencia.
+- [ ] **Búsquedas concurrentes** — Semáforo para múltiples celdas en paralelo (actualmente secuencial, más lento)
+- [ ] **Búsqueda por categoría** — Además de keywords libres, filtrar por tipos de Google Places (restaurant, store, etc.)
+- [ ] **Historial mejorado** — Filtros, paginación, búsqueda por localidad en el historial
+
+#### Para escalar como SaaS
+
+- [ ] **Pipeline de contacto (mini-CRM)** — Marcar negocios como "contactado" / "interesado" / "no responde", agregar notas. Convierte la app de búsqueda one-shot a herramienta de uso diario.
+- [ ] **Búsquedas programadas + alertas** — "Avisame cuando aparezca un negocio nuevo de tipo X en esta zona". Justifica suscripción mensual.
+- [ ] **Stripe + planes** — Plan free (50 búsquedas/mes), plan pro (ilimitado). Sin billing no hay negocio SaaS.
 - [ ] **Google OAuth** — Login con Google además de email/password
-- [ ] **Búsquedas concurrentes** — Semáforo para múltiples celdas en paralelo (actualmente secuencial)
-- [ ] **Búsqueda por categoría** — Además de keywords, filtrar por tipos de Google Places
-- [ ] **Mapa de calor** — Visualizar densidad de resultados por zona
-- [ ] **Historial mejorado** — Filtros, paginación, búsqueda por localidad
+- [ ] **Multi-usuario** — Equipos con roles (admin, usuario, viewer)
 - [ ] **Multi-territorio** — Buscar en varios territorios a la vez
 - [ ] **Dashboard de analytics** — Métricas de uso histórico, tendencias
-- [ ] **Multi-usuario** — Equipos con roles (admin, usuario, viewer)
 - [ ] **API pública** — REST API para integrar con otros sistemas
+- [ ] **WhatsApp Business API** — Contacto directo desde la app (muy relevante para mercado argentino)
 
 ### Mejoras técnicas (de la auditoría)
 
