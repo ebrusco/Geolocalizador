@@ -271,8 +271,6 @@ function AuthGate() {
   const token = useAuthStore((s) => s.token);
   const setAuth = useAuthStore((s) => s.setAuth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
-  const setLoading = useAuthStore((s) => s.setLoading);
-
   useEffect(() => {
     if (token && loading) {
       let cancelled = false;

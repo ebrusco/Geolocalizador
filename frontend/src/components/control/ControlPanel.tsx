@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { X, Gauge, CalendarDays, CreditCard, DollarSign, Users, Plus, Trash2, Shield, Loader2 } from "lucide-react";
 import { getUsage } from "../../api/usage";
 import { listAllowedEmails, addAllowedEmail, removeAllowedEmail, type AllowedEmail } from "../../api/allowed-emails";
-import { useAuthStore } from "../../stores/authStore";
 import { useUIStore } from "../../stores/uiStore";
 import type { UsageSummary } from "../../types";
 
@@ -25,7 +24,6 @@ export function ControlPanel({ onClose }: Props) {
   const [adding, setAdding] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  const currentUser = useAuthStore((s) => s.user);
   const addToast = useUIStore((s) => s.addToast);
 
   useEffect(() => {

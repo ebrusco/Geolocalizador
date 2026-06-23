@@ -93,7 +93,6 @@ export const useTerritoryStore = create<TerritoryState>((set, get) => ({
     }),
 
   clearRefinement: () => {
-    const state = get();
     set({
       refinedPolygon: null,
       refinedGeojson: null,
