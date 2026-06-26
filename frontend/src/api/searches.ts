@@ -35,6 +35,21 @@ export async function cancelSearch(id: number): Promise<void> {
   await api.post(`/searches/${id}/cancel`);
 }
 
+export async function getSearchResults(id: number): Promise<import("../types").PlaceMarker[]> {
+  const allPlaces: import("../types").PlaceMarker[] = [];
+  let page = 1;
+  while (true) {
+    const { data } = await api.get<{ places: import("../types").PlaceMarker[]; total: number }>(
+      `/searches/${id}/results`,
+      { params: { page, per_page: 500 } },
+    );
+    allPlaces.push(...data.places);
+    if (allPlaces.length >= data.total) break;
+    page++;
+  }
+  return allPlaces;
+}
+
 export function searchStreamUrl(id: number): string {
   return `/api/v1/searches/${id}/stream`;
 }

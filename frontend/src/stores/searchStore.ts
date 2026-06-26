@@ -15,6 +15,7 @@ interface SearchState {
   addMarker: (marker: PlaceMarker) => void;
   setCompleted: (totalPlaces: number) => void;
   setFailed: (error: string) => void;
+  loadFromHistory: (id: number, totalPlaces: number, markers: PlaceMarker[]) => void;
   reset: () => void;
 }
 
@@ -48,6 +49,17 @@ export const useSearchStore = create<SearchState>((set) => ({
     set({ status: "completed", totalPlaces }),
 
   setFailed: (error) => set({ status: "failed", errorMessage: error }),
+
+  loadFromHistory: (id, totalPlaces, markers) =>
+    set({
+      searchId: id,
+      status: "completed",
+      totalCells: 0,
+      completedCells: 0,
+      totalPlaces,
+      markers,
+      errorMessage: null,
+    }),
 
   reset: () =>
     set({

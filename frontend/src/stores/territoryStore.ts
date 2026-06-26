@@ -21,6 +21,15 @@ interface TerritoryState {
   refinedGeojson: GeoJSONPolygon | null;
 
   setMode: (m: TerritoryMode) => void;
+  loadFromSearch: (t: {
+    nombre: string;
+    bounds: Bounds;
+    geojson: GeoJSONPolygon;
+    polygon: [number, number][];
+    radiusM: number;
+    cells: GridCell[];
+    h3Resolution: number;
+  }) => void;
   setTerritory: (t: {
     id: number;
     nombre: string;
@@ -58,6 +67,22 @@ export const useTerritoryStore = create<TerritoryState>((set, get) => ({
   refinedGeojson: null,
 
   setMode: (m) => set({ mode: m }),
+
+  loadFromSearch: (t) =>
+    set({
+      nombre: t.nombre,
+      bounds: t.bounds,
+      geojson: t.geojson,
+      polygon: t.polygon,
+      radiusM: t.radiusM,
+      cells: t.cells,
+      h3Resolution: t.h3Resolution,
+      id: null,
+      areaKm2: null,
+      isRefining: false,
+      refinedPolygon: null,
+      refinedGeojson: null,
+    }),
 
   setTerritory: (t) =>
     set({

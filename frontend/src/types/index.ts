@@ -56,6 +56,9 @@ export interface Search {
   completed_at: string | null;
   created_at: string;
   territorio_nombre?: string;
+  // Present when fetching a single search (not in list)
+  geojson?: GeoJSONPolygon | null;
+  bounds?: Bounds | null;
 }
 
 export interface PlaceMarker {

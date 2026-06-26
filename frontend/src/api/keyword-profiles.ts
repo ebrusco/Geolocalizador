@@ -17,6 +17,15 @@ export async function createProfile(
   return data;
 }
 
+export async function updateProfile(
+  id: number,
+  nombre: string,
+  keywords: string[],
+): Promise<KeywordProfile> {
+  const { data } = await api.put<KeywordProfile>(`/keyword-profiles/${id}`, { nombre, keywords });
+  return data;
+}
+
 export async function deleteProfile(id: number): Promise<void> {
   await api.delete(`/keyword-profiles/${id}`);
 }
