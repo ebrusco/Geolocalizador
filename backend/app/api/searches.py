@@ -2,16 +2,19 @@ import asyncio
 import json
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
 import app.database as db
+from app.auth.dependencies import get_current_user
 from app.models.search import SearchRequest, SearchResponse, EstimateRequest
 from app.services.search_engine import search_registry, run_search
 from app.services.grid import generate_cells, generate_cells_from_geojson
-from app.services.usage_tracker import usage_tracker, COST_PER_CALL_USD, FREE_MONTHLY_CREDIT_USD
+from app.services.usage_tracker import usage_tracker, COST_PER_CALL_USD
 
 router = APIRouter()
+
+MAX_CONCURRENT_PER_USER = 3
 
 
 @router.post("/estimate")
@@ -28,8 +31,7 @@ async def estimate_search(req: EstimateRequest):
     total_calls = total_cells * req.keyword_count
     gross_cost = round(total_calls * COST_PER_CALL_USD, 2)
 
-    summary = usage_tracker.get_summary()
-    free_remaining = summary["free_credit_remaining_usd"]
+    summary = await usage_tracker.get_summary()
     free_calls_remaining = summary["free_calls_remaining"]
 
     covered_by_free = min(total_calls, free_calls_remaining)
@@ -56,7 +58,20 @@ async def estimate_search(req: EstimateRequest):
 
 
 @router.post("", response_model=SearchResponse, status_code=201)
-async def start_search(req: SearchRequest, background_tasks: BackgroundTasks):
+async def start_search(
+    req: SearchRequest,
+    background_tasks: BackgroundTasks,
+    user: dict = Depends(get_current_user),
+):
+    user_id = user.get("id", "anonymous")
+    running = search_registry.count_running_for_user(user_id)
+    if running >= MAX_CONCURRENT_PER_USER:
+        raise HTTPException(
+            429,
+            f"Máximo {MAX_CONCURRENT_PER_USER} búsquedas simultáneas por usuario. "
+            "Esperá a que terminen las actuales.",
+        )
+
     db_search_id = None
     if db.is_connected():
         from app.db.repositories import searches as search_repo
@@ -73,6 +88,7 @@ async def start_search(req: SearchRequest, background_tasks: BackgroundTasks):
 
     search_id = search_registry.create(
         search_id=db_search_id,
+        user_id=user_id,
         keywords=req.keywords,
         radius_m=req.radius_m,
         bounds=req.bounds,

@@ -80,7 +80,7 @@ async def search_nearby(
         resp = await client.post(url, json=body, headers=headers)
 
         if resp.status_code == 200:
-            usage_tracker.record_call(search_id=None)
+            await usage_tracker.record_call(search_id=None)
             data = resp.json()
             return data.get("places", [])
 

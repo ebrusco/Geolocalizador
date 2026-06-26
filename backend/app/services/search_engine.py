@@ -25,12 +25,13 @@ class SearchRegistry:
 
     def create(self, search_id: int | None, keywords: list[str], radius_m: int,
                bounds: Bounds, territorio_nombre: str, field_mask: str,
-               geojson: dict | None = None) -> int:
+               geojson: dict | None = None, user_id: str = "") -> int:
         if search_id is None:
             self._counter += 1
             search_id = self._counter
         self._searches[search_id] = {
             "id": search_id,
+            "user_id": user_id,
             "keywords": keywords,
             "radius_m": radius_m,
             "bounds": bounds,
@@ -48,6 +49,12 @@ class SearchRegistry:
             "places": [],
         }
         return search_id
+
+    def count_running_for_user(self, user_id: str) -> int:
+        return sum(
+            1 for e in self._searches.values()
+            if e.get("user_id") == user_id and e.get("status") == "running"
+        )
 
     def get(self, search_id: int) -> dict | None:
         return self._searches.get(search_id)

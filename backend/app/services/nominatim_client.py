@@ -30,7 +30,11 @@ async def get_polygon(query: str) -> dict | None:
         return None
 
     if geojson["type"] == "MultiPolygon":
-        largest = max(geojson["coordinates"], key=lambda c: len(c[0]))
+        from shapely.geometry import shape as _shape
+        largest = max(
+            geojson["coordinates"],
+            key=lambda c: _shape({"type": "Polygon", "coordinates": c}).area,
+        )
         geojson = {"type": "Polygon", "coordinates": largest}
 
     coords_lonlat = geojson["coordinates"][0]

@@ -7,9 +7,9 @@ router = APIRouter()
 
 @router.get("")
 async def get_usage():
-    return usage_tracker.get_summary()
+    return await usage_tracker.get_summary()
 
 
 @router.get("/daily")
 async def get_daily_breakdown():
-    return usage_tracker.get_daily_breakdown()
+    return await usage_tracker.get_daily_breakdown()

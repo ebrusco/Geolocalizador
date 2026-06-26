@@ -271,6 +271,8 @@ function AuthGate() {
   const token = useAuthStore((s) => s.token);
   const setAuth = useAuthStore((s) => s.setAuth);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+
+  // Initial session validation on mount
   useEffect(() => {
     if (token && loading) {
       let cancelled = false;
@@ -287,6 +289,16 @@ function AuthGate() {
       return () => { cancelled = true; };
     }
   }, []);
+
+  // Periodic session check every 5 minutes to catch silent expiry
+  useEffect(() => {
+    if (!isAuthenticated || !token) return;
+    const interval = setInterval(async () => {
+      const res = await getSession(token).catch(() => null);
+      if (!res) clearAuth();
+    }, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, clearAuth]);
 
   if (loading) {
     return (

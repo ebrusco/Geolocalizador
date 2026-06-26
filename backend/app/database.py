@@ -42,6 +42,7 @@ async def get_pool() -> asyncpg.Pool:
 async def run_migrations():
     if pool is None:
         return
-    migration = Path(__file__).parent / "db" / "migrations" / "001_initial.sql"
-    sql = migration.read_text(encoding="utf-8")
-    await pool.execute(sql)
+    migrations_dir = Path(__file__).parent / "db" / "migrations"
+    for migration in sorted(migrations_dir.glob("*.sql")):
+        sql = migration.read_text(encoding="utf-8")
+        await pool.execute(sql)

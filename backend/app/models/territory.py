@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class Bounds(BaseModel):
@@ -16,6 +16,13 @@ class GeocodeRequest(BaseModel):
 class PolygonRequest(BaseModel):
     coordinates: list[list[float]]
     radius_m: int = 500
+
+    @field_validator("coordinates")
+    @classmethod
+    def validate_polygon(cls, v: list[list[float]]) -> list[list[float]]:
+        if len(v) < 3:
+            raise ValueError("Un polígono necesita al menos 3 puntos")
+        return v
 
 
 class GridCell(BaseModel):
