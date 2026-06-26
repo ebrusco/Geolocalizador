@@ -12,7 +12,7 @@ from app.config import settings
 import app.database as db
 from app.database import init_pool, close_pool, run_migrations
 from app.auth.dependencies import get_current_user
-from app.api import territories, searches, places, exports, keyword_profiles, usage, allowed_emails, photos
+from app.api import territories, searches, places, exports, keyword_profiles, usage, allowed_emails, photos, auth_proxy
 
 
 @asynccontextmanager
@@ -66,6 +66,7 @@ app.include_router(keyword_profiles.router, prefix="/api/v1/keyword-profiles", t
 app.include_router(usage.router, prefix="/api/v1/usage", tags=["usage"], dependencies=auth_dep)
 app.include_router(allowed_emails.router, prefix="/api/v1/allowed-emails", tags=["allowed-emails"], dependencies=auth_dep)
 app.include_router(photos.router, prefix="/api/v1", tags=["photos"], dependencies=auth_dep)
+app.include_router(auth_proxy.router, prefix="/api/auth", tags=["auth"])
 
 
 @app.get("/api/v1/me")

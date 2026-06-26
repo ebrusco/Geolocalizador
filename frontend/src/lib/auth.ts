@@ -1,4 +1,4 @@
-const AUTH_URL = import.meta.env.VITE_NEON_AUTH_URL || "";
+const AUTH_URL = "/api/auth";
 
 interface AuthUser {
   id: string;
