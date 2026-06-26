@@ -32,9 +32,14 @@ async def auth_proxy(path: str, request: Request) -> Response:
     # Extract the Neon Auth hostname to set as Host header
     neon_host = urlparse(settings.neon_auth_url).netloc
 
-    skip = {"host", "content-length", "transfer-encoding", "connection"}
+    skip = {
+        "host", "content-length", "transfer-encoding", "connection",
+        "origin", "referer", "x-forwarded-host", "x-forwarded-for",
+        "x-real-ip",
+    }
     forward_headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
     forward_headers["host"] = neon_host
+    forward_headers["origin"] = settings.neon_auth_url
 
     client = _get_client()
     resp = await client.request(
