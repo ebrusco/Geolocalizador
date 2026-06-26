@@ -227,17 +227,23 @@ function AppContent() {
           </div>
 
           <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 5.5rem)" }}>
-            <div className="p-4 border-b border-slate-100/60">
-              <p className="text-xs font-medium text-slate-500 mb-3">Progreso</p>
-              <ProgressBar />
-            </div>
-            <div className="p-4 border-b border-slate-100/60">
-              <p className="text-xs font-medium text-slate-500 mb-3">Estadísticas</p>
-              <SearchStats />
-            </div>
-            <div className="p-4 border-b border-slate-100/60">
-              <ExportButton />
-            </div>
+            {status !== "idle" && (
+              <div className="p-4 border-b border-slate-100/60">
+                <p className="text-xs font-medium text-slate-500 mb-3">Progreso</p>
+                <ProgressBar />
+              </div>
+            )}
+            {status !== "idle" && (
+              <div className="p-4 border-b border-slate-100/60">
+                <p className="text-xs font-medium text-slate-500 mb-3">Estadísticas</p>
+                <SearchStats />
+              </div>
+            )}
+            {status !== "idle" && (
+              <div className="p-4 border-b border-slate-100/60">
+                <ExportButton />
+              </div>
+            )}
             <div className="p-4">
               <p className="text-xs font-medium text-slate-500 mb-3">Historial</p>
               <SearchHistory />
