@@ -50,6 +50,10 @@ export async function getSearchResults(id: number): Promise<import("../types").P
   return allPlaces;
 }
 
+export async function clearAllSearches(): Promise<void> {
+  await api.delete("/searches");
+}
+
 export function searchStreamUrl(id: number): string {
   return `/api/v1/searches/${id}/stream`;
 }

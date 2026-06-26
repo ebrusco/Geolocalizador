@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { X, Gauge, CalendarDays, CreditCard, DollarSign, Users, Plus, Trash2, Shield, Loader2 } from "lucide-react";
+import { X, Gauge, CalendarDays, CreditCard, DollarSign, Users, Plus, Trash2, Shield, Loader2, AlertTriangle } from "lucide-react";
 import { getUsage } from "../../api/usage";
+import { clearAllSearches } from "../../api/searches";
 import { listAllowedEmails, addAllowedEmail, removeAllowedEmail, type AllowedEmail } from "../../api/allowed-emails";
 import { useUIStore } from "../../stores/uiStore";
+import { useSearchStore } from "../../stores/searchStore";
 import type { UsageSummary } from "../../types";
 
 type Tab = "usage" | "access";
@@ -23,6 +25,8 @@ export function ControlPanel({ onClose }: Props) {
   const [newEmail, setNewEmail] = useState("");
   const [adding, setAdding] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [clearing, setClearing] = useState(false);
 
   const addToast = useUIStore((s) => s.addToast);
 
@@ -186,6 +190,62 @@ export function ControlPanel({ onClose }: Props) {
                     Quedan <span className="font-bold">{usage.free_calls_remaining.toLocaleString()}</span> llamadas sin costo.
                   </div>
                 )}
+
+                {/* Danger zone */}
+                <div className="border-t border-slate-100 pt-4">
+                  {!confirmClear ? (
+                    <button
+                      onClick={() => setConfirmClear(true)}
+                      className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-[#EA4335]
+                                 cursor-pointer bg-transparent border-none p-0 transition-colors"
+                    >
+                      <Trash2 size={13} />
+                      Borrar todo el historial
+                    </button>
+                  ) : (
+                    <div className="bg-red-50 rounded-lg p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle size={14} className="text-[#EA4335] mt-0.5 flex-shrink-0" />
+                        <p className="text-xs text-red-700">
+                          Esto borra <strong>todas las búsquedas</strong>, negocios guardados y
+                          contadores de uso. No se puede deshacer.
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async () => {
+                            setClearing(true);
+                            try {
+                              await clearAllSearches();
+                              useSearchStore.getState().reset();
+                              setConfirmClear(false);
+                              addToast("Historial borrado", "ok");
+                              await loadUsage();
+                            } catch (err: any) {
+                              addToast(err.response?.data?.detail || "Error al borrar", "error");
+                            } finally {
+                              setClearing(false);
+                            }
+                          }}
+                          disabled={clearing}
+                          className="flex items-center gap-1 text-xs bg-[#EA4335] text-white px-3 py-1.5
+                                     rounded-lg cursor-pointer hover:bg-red-700 disabled:opacity-50
+                                     border-none transition-colors"
+                        >
+                          {clearing ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                          Sí, borrar todo
+                        </button>
+                        <button
+                          onClick={() => setConfirmClear(false)}
+                          className="text-xs text-slate-500 hover:text-slate-700 cursor-pointer
+                                     bg-transparent border-none transition-colors"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>

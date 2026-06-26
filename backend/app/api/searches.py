@@ -177,3 +177,26 @@ async def cancel_search(search_id: int):
         raise HTTPException(404, "Search not found")
     entry["abort"] = True
     return {"status": "cancelling"}
+
+
+@router.delete("")
+async def clear_all_searches(user: dict = Depends(get_current_user)):
+    """Admin-only: delete all searches, places and usage history."""
+    from app.auth.dependencies import _get_admin_emails
+    admins = _get_admin_emails()
+    if admins and user.get("email", "").lower() not in admins:
+        raise HTTPException(403, "Solo el administrador puede borrar el historial")
+    if not db.is_connected():
+        raise HTTPException(503, "Base de datos no disponible")
+
+    await db.pool.execute("TRUNCATE searches CASCADE")
+    await db.pool.execute("DELETE FROM places")
+    await db.pool.execute("DELETE FROM api_usage")
+
+    # Clear in-memory state
+    search_registry._searches.clear()
+    from app.services.usage_tracker import usage_tracker
+    usage_tracker._calls.clear()
+    usage_tracker._summary_cache = None
+
+    return {"deleted": True}
