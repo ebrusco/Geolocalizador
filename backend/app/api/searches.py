@@ -118,7 +118,7 @@ async def list_searches():
     return {"searches": searches, "total": len(searches)}
 
 
-@router.get("/{search_id}", response_model=SearchResponse)
+@router.get("/{search_id}")
 async def get_search(search_id: int):
     entry = search_registry.get(search_id)
     if entry:

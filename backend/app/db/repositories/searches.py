@@ -64,6 +64,9 @@ def _row_to_dict(row) -> dict:
     for ts in ("started_at", "completed_at", "created_at"):
         if d.get(ts):
             d[ts] = d[ts].isoformat()
+    for json_field in ("geojson", "bounds"):
+        if isinstance(d.get(json_field), str):
+            d[json_field] = json.loads(d[json_field])
     return d
 
 
