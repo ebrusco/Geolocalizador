@@ -56,6 +56,8 @@ export interface Search {
   completed_at: string | null;
   created_at: string;
   territorio_nombre?: string;
+  pinned?: boolean;
+  custom_name?: string | null;
   // Present when fetching a single search (not in list)
   geojson?: GeoJSONPolygon | null;
   bounds?: Bounds | null;

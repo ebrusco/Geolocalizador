@@ -1,0 +1,3 @@
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE searches ADD COLUMN IF NOT EXISTS custom_name TEXT;
+CREATE INDEX IF NOT EXISTS idx_searches_pinned ON searches (pinned) WHERE pinned = TRUE;

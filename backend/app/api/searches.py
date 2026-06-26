@@ -170,6 +170,19 @@ async def stream_search(search_id: int):
     return EventSourceResponse(event_generator())
 
 
+@router.patch("/{search_id}/pin")
+async def pin_search(search_id: int, body: dict):
+    if not db.is_connected():
+        raise HTTPException(503, "Base de datos no disponible")
+    from app.db.repositories import searches as search_repo
+    pinned = bool(body.get("pinned", False))
+    custom_name = body.get("custom_name") or None
+    ok = await search_repo.pin_search(db.pool, search_id, pinned, custom_name)
+    if not ok:
+        raise HTTPException(404, "Search not found")
+    return {"pinned": pinned, "custom_name": custom_name}
+
+
 @router.post("/{search_id}/cancel")
 async def cancel_search(search_id: int):
     entry = search_registry.get(search_id)

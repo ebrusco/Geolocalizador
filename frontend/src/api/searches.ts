@@ -54,6 +54,14 @@ export async function clearAllSearches(): Promise<void> {
   await api.delete("/searches");
 }
 
+export async function pinSearch(id: number, customName: string): Promise<void> {
+  await api.patch(`/searches/${id}/pin`, { pinned: true, custom_name: customName });
+}
+
+export async function unpinSearch(id: number): Promise<void> {
+  await api.patch(`/searches/${id}/pin`, { pinned: false, custom_name: null });
+}
+
 export function searchStreamUrl(id: number): string {
   return `/api/v1/searches/${id}/stream`;
 }

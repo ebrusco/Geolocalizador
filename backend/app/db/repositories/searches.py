@@ -34,9 +34,9 @@ async def update_status(pool: asyncpg.Pool, search_id: int, *,
 
 async def get(pool: asyncpg.Pool, search_id: int) -> dict | None:
     row = await pool.fetchrow(
-        """SELECT id, territorio_nombre, keywords, radius_m, bounds, geojson,
-                  field_mask, status, total_cells, completed_cells, total_places,
-                  started_at, completed_at, created_at
+        """SELECT id, territorio_nombre, custom_name, pinned, keywords, radius_m,
+                  bounds, geojson, field_mask, status, total_cells, completed_cells,
+                  total_places, started_at, completed_at, created_at
            FROM searches WHERE id = $1""",
         search_id,
     )
@@ -45,12 +45,21 @@ async def get(pool: asyncpg.Pool, search_id: int) -> dict | None:
 
 async def list_all(pool: asyncpg.Pool) -> list[dict]:
     rows = await pool.fetch(
-        """SELECT id, territorio_nombre, keywords, radius_m, status,
-                  total_cells, completed_cells, total_places,
+        """SELECT id, territorio_nombre, custom_name, pinned, keywords, radius_m,
+                  status, total_cells, completed_cells, total_places,
                   started_at, completed_at, created_at
            FROM searches ORDER BY created_at DESC"""
     )
     return [_row_to_response(r) for r in rows]
+
+
+async def pin_search(pool: asyncpg.Pool, search_id: int,
+                     pinned: bool, custom_name: str | None) -> bool:
+    result = await pool.execute(
+        "UPDATE searches SET pinned=$2, custom_name=$3 WHERE id=$1",
+        search_id, pinned, custom_name,
+    )
+    return result == "UPDATE 1"
 
 
 def _convert_value(v):
