@@ -67,6 +67,8 @@ class SearchRegistry:
 
     def get_response(self, search_id: int) -> dict:
         entry = self._searches[search_id]
+        bounds = entry.get("bounds")
+        bounds_dict = bounds.model_dump() if hasattr(bounds, "model_dump") else bounds
         return {
             "id": entry["id"],
             "keywords": entry["keywords"],
@@ -79,6 +81,8 @@ class SearchRegistry:
             "completed_at": entry["completed_at"],
             "created_at": entry["created_at"],
             "territorio_nombre": entry["territorio_nombre"],
+            "geojson": entry.get("geojson"),
+            "bounds": bounds_dict,
         }
 
 

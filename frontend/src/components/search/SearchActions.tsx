@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, X } from "lucide-react";
 import { useTerritoryStore } from "../../stores/territoryStore";
 import { useSearchStore } from "../../stores/searchStore";
@@ -18,6 +18,11 @@ export function SearchActions({ keywords }: Props) {
   const addToast = useUIStore((s) => s.addToast);
   const [estimate, setEstimate] = useState<SearchEstimate | null>(null);
   const [loading, setLoading] = useState(false);
+  const [searchName, setSearchName] = useState(nombre);
+
+  useEffect(() => {
+    setSearchName(nombre);
+  }, [nombre]);
 
   const canStart = bounds && keywords.length > 0 && status !== "running";
 
@@ -54,7 +59,7 @@ export function SearchActions({ keywords }: Props) {
         keywords,
         radius_m: radiusM,
         bounds,
-        territorio_nombre: nombre,
+        territorio_nombre: searchName || nombre,
         geojson: activeGeo ?? undefined,
       });
       storeStart(search.id, search.total_cells || cells.length * keywords.length);
@@ -76,6 +81,17 @@ export function SearchActions({ keywords }: Props) {
 
   return (
     <>
+      {bounds && (
+        <input
+          type="text"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+          placeholder="Nombre del análisis..."
+          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700
+                     placeholder:text-slate-400 bg-white outline-none focus:border-[#4285F4]
+                     focus:ring-1 focus:ring-[#4285F4] transition-colors"
+        />
+      )}
       {status === "running" ? (
         <button
           onClick={handleCancel}
@@ -102,7 +118,7 @@ export function SearchActions({ keywords }: Props) {
       {estimate && (
         <CostConfirmModal
           estimate={estimate}
-          territorio={nombre}
+          territorio={searchName || nombre}
           keywords={keywords.length}
           onConfirm={executeSearch}
           onCancel={() => setEstimate(null)}
