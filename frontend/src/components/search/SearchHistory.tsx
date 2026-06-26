@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CheckCircle2, Loader2, XCircle, Ban, Clock, Download, MapPin } from "lucide-react";
+import { CheckCircle2, Loader2, XCircle, Ban, Clock, Download, MapPin, Mail } from "lucide-react";
 import { listSearches, getSearch, getSearchResults } from "../../api/searches";
 import { getGridPolygon } from "../../api/territories";
 import { downloadExport } from "../../api/exports";
@@ -78,7 +78,7 @@ export function SearchHistory() {
           enlace_maps: (p as any).enlace_maps ?? null,
         }));
 
-      useSearchStore.getState().loadFromHistory(s.id, markers.length, markers);
+      useSearchStore.getState().loadFromHistory(s.id, markers.length, markers, detail.total_cells);
       addToast(`"${detail.territorio_nombre || `Búsqueda #${s.id}`}" cargado en el mapa`, "ok");
     } catch {
       addToast("Error al cargar el análisis", "error");
@@ -105,13 +105,22 @@ export function SearchHistory() {
         const cfg = statusConfig[s.status] || statusConfig.pending;
         const isLoading = loadingId === s.id;
         const canLoad = s.status === "completed" && s.total_places > 0;
+        const emailsFound = localStorage.getItem(`emails_${s.id}`);
         return (
           <div key={s.id} className="rounded-lg px-2.5 py-2 hover:bg-slate-50 transition-colors">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-slate-700 truncate flex-1 min-w-0 mr-2">
                 {s.territorio_nombre || `Búsqueda #${s.id}`}
               </span>
-              <span className={cfg.color + " flex-shrink-0"}>{cfg.icon}</span>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {emailsFound !== null && (
+                  <span className="flex items-center gap-0.5 text-[10px] text-[#34A853] bg-green-50 px-1.5 py-0.5 rounded-full font-medium">
+                    <Mail size={9} />
+                    {emailsFound}
+                  </span>
+                )}
+                <span className={cfg.color}>{cfg.icon}</span>
+              </div>
             </div>
             <div className="text-xs text-slate-400 mt-0.5 truncate">
               {s.keywords.join(", ")} · {s.total_places} resultados

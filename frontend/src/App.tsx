@@ -33,6 +33,7 @@ const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY || "";
 function AppContent() {
   const [keywords, setKeywords] = useState<string[]>([]);
   const [showControl, setShowControl] = useState(false);
+  const [searchName, setSearchName] = useState("");
   const searchId = useSearchStore((s) => s.searchId);
   const status = useSearchStore((s) => s.status);
   const territoryMode = useTerritoryStore((s) => s.mode);
@@ -43,6 +44,9 @@ function AppContent() {
   const storeClearRefinement = useTerritoryStore((s) => s.clearRefinement);
   const geojson = useTerritoryStore((s) => s.geojson);
   const radiusM = useTerritoryStore((s) => s.radiusM);
+  const territoryNombre = useTerritoryStore((s) => s.nombre);
+
+  useEffect(() => { setSearchName(territoryNombre); }, [territoryNombre]);
   const setCells = useTerritoryStore((s) => s.setCells);
   const leftOpen = useUIStore((s) => s.leftPanelOpen);
   const rightOpen = useUIStore((s) => s.rightPanelOpen);
@@ -105,6 +109,18 @@ function AppContent() {
                 )}
               </div>
               <TerritoryInfo />
+
+              {hasTerritory && status !== "running" && (
+                <input
+                  type="text"
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  placeholder="Nombre del análisis..."
+                  className="mt-3 w-full border border-slate-200 rounded-lg px-3 py-2 text-sm
+                             text-slate-700 placeholder:text-slate-400 bg-white outline-none
+                             focus:border-[#4285F4] focus:ring-1 focus:ring-[#4285F4] transition-colors"
+                />
+              )}
 
               {territoryMode === "locality" && hasTerritory && status !== "running" && (
                 <div className="mt-3 space-y-2">
@@ -182,7 +198,7 @@ function AppContent() {
 
             {/* Search action */}
             <div className="p-4">
-              <SearchActions keywords={keywords} />
+              <SearchActions keywords={keywords} searchName={searchName} />
             </div>
           </div>
         </aside>

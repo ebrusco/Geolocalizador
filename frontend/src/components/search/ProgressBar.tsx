@@ -6,7 +6,8 @@ export function ProgressBar() {
 
   if (status === "idle") return null;
 
-  const pct = totalCells > 0 ? Math.round((completedCells / totalCells) * 100) : 0;
+  const pct = status === "completed" ? 100 :
+              totalCells > 0 ? Math.round((completedCells / totalCells) * 100) : 0;
 
   const config: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
     running: { color: "bg-[#4285F4]", icon: <Loader2 size={14} className="animate-spin text-[#4285F4]" />, label: "Buscando..." },

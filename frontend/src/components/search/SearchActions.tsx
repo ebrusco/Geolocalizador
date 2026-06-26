@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Search, X } from "lucide-react";
 import { useTerritoryStore } from "../../stores/territoryStore";
 import { useSearchStore } from "../../stores/searchStore";
@@ -9,20 +9,16 @@ import type { SearchEstimate } from "../../types";
 
 interface Props {
   keywords: string[];
+  searchName: string;
 }
 
-export function SearchActions({ keywords }: Props) {
+export function SearchActions({ keywords, searchName }: Props) {
   const { bounds, nombre, radiusM, cells } = useTerritoryStore();
   const activeGeo = useTerritoryStore((s) => s.activeGeojson());
   const { status, searchId, startSearch: storeStart, reset } = useSearchStore();
   const addToast = useUIStore((s) => s.addToast);
   const [estimate, setEstimate] = useState<SearchEstimate | null>(null);
   const [loading, setLoading] = useState(false);
-  const [searchName, setSearchName] = useState(nombre);
-
-  useEffect(() => {
-    setSearchName(nombre);
-  }, [nombre]);
 
   const canStart = bounds && keywords.length > 0 && status !== "running";
 
@@ -81,17 +77,6 @@ export function SearchActions({ keywords }: Props) {
 
   return (
     <>
-      {bounds && (
-        <input
-          type="text"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-          placeholder="Nombre del análisis..."
-          className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700
-                     placeholder:text-slate-400 bg-white outline-none focus:border-[#4285F4]
-                     focus:ring-1 focus:ring-[#4285F4] transition-colors"
-        />
-      )}
       {status === "running" ? (
         <button
           onClick={handleCancel}

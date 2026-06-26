@@ -46,6 +46,7 @@ export function ExportButton() {
       (r) => {
         setResult(r);
         setScrapeStatus("done");
+        localStorage.setItem(`emails_${searchId}`, String(r.found));
       },
       () => {
         setScrapeStatus("error");
