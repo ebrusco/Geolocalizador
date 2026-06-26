@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 import httpx
 from fastapi import APIRouter, Request
 from fastapi.responses import Response
@@ -12,7 +14,7 @@ _client: httpx.AsyncClient | None = None
 def _get_client() -> httpx.AsyncClient:
     global _client
     if _client is None or _client.is_closed:
-        _client = httpx.AsyncClient(timeout=15.0)
+        _client = httpx.AsyncClient(timeout=15.0, follow_redirects=True)
     return _client
 
 
@@ -27,10 +29,12 @@ async def auth_proxy(path: str, request: Request) -> Response:
 
     body = await request.body()
 
-    forward_headers = {
-        k: v for k, v in request.headers.items()
-        if k.lower() not in ("host", "content-length", "transfer-encoding")
-    }
+    # Extract the Neon Auth hostname to set as Host header
+    neon_host = urlparse(settings.neon_auth_url).netloc
+
+    skip = {"host", "content-length", "transfer-encoding", "connection"}
+    forward_headers = {k: v for k, v in request.headers.items() if k.lower() not in skip}
+    forward_headers["host"] = neon_host
 
     client = _get_client()
     resp = await client.request(
@@ -40,8 +44,8 @@ async def auth_proxy(path: str, request: Request) -> Response:
         content=body,
     )
 
-    excluded = {"transfer-encoding", "content-encoding"}
-    response_headers = {k: v for k, v in resp.headers.items() if k.lower() not in excluded}
+    skip_resp = {"transfer-encoding", "content-encoding", "connection"}
+    response_headers = {k: v for k, v in resp.headers.items() if k.lower() not in skip_resp}
 
     return Response(
         content=resp.content,
