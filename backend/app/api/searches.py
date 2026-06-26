@@ -189,9 +189,12 @@ async def clear_all_searches(user: dict = Depends(get_current_user)):
     if not db.is_connected():
         raise HTTPException(503, "Base de datos no disponible")
 
-    await db.pool.execute("TRUNCATE searches CASCADE")
-    await db.pool.execute("DELETE FROM places")
-    await db.pool.execute("DELETE FROM api_usage")
+    async with db.pool.acquire() as conn:
+        async with conn.transaction():
+            await conn.execute("DELETE FROM api_usage")
+            await conn.execute("DELETE FROM search_results")
+            await conn.execute("DELETE FROM searches")
+            await conn.execute("DELETE FROM places")
 
     # Clear in-memory state
     search_registry._searches.clear()

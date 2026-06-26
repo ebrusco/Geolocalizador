@@ -222,7 +222,8 @@ export function ControlPanel({ onClose }: Props) {
                               addToast("Historial borrado", "ok");
                               await loadUsage();
                             } catch (err: any) {
-                              addToast(err.response?.data?.detail || "Error al borrar", "error");
+                              const msg = err.response?.data?.detail || err.message || "Error al borrar";
+                              addToast(msg, "error");
                             } finally {
                               setClearing(false);
                             }
