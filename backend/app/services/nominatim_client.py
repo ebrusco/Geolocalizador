@@ -3,18 +3,21 @@ import httpx
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 
-async def get_polygon(query: str) -> dict | None:
+async def get_polygon(query: str, country_code: str = "") -> dict | None:
     """Fetch the real GeoJSON polygon for a locality from OpenStreetMap."""
+    params = {
+        "q": query,
+        "format": "json",
+        "polygon_geojson": 1,
+        "limit": 1,
+    }
+    if country_code:
+        params["countrycodes"] = country_code.lower()
+
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.get(
             NOMINATIM_URL,
-            params={
-                "q": f"{query}, Argentina",
-                "format": "json",
-                "polygon_geojson": 1,
-                "limit": 1,
-                "countrycodes": "ar",
-            },
+            params=params,
             headers={"User-Agent": "ProspectoAI/2.0"},
         )
         resp.raise_for_status()

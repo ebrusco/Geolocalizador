@@ -2,18 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr
 
 import app.database as db
-from app.auth.dependencies import get_current_user, _get_admin_emails, invalidate_allowed_cache
+from app.auth.dependencies import get_current_user, _get_admin_emails, require_admin, invalidate_allowed_cache
 from app.db.repositories import allowed_emails as ae_repo
 
 router = APIRouter()
 
 
 def _require_admin(user: dict):
-    admins = _get_admin_emails()
-    if not admins:
-        return
-    if user.get("email", "").lower() not in admins:
-        raise HTTPException(403, "Solo el administrador puede gestionar accesos")
+    require_admin(user, "Solo el administrador puede gestionar accesos")
 
 
 class AddEmailRequest(BaseModel):

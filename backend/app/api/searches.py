@@ -6,7 +6,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sse_starlette.sse import EventSourceResponse
 
 import app.database as db
-from app.auth.dependencies import get_current_user
+from app.auth.dependencies import get_current_user, is_admin, require_admin, require_owner_or_admin
 from app.models.search import SearchRequest, SearchResponse, EstimateRequest
 from app.services.search_engine import search_registry, run_search
 from app.services.grid import generate_cells, generate_cells_from_geojson
@@ -84,6 +84,7 @@ async def start_search(
             bounds=bounds_dict,
             geojson=req.geojson,
             field_mask=req.field_mask,
+            user_id=user_id,
         )
 
     search_id = search_registry.create(
@@ -100,8 +101,17 @@ async def start_search(
     return search_registry.get_response(search_id)
 
 
+def _is_owned_by(resource_user_id: str | None, user: dict) -> bool:
+    if is_admin(user):
+        return True
+    return not resource_user_id or resource_user_id == user.get("id")
+
+
 @router.get("")
-async def list_searches():
+async def list_searches(user: dict = Depends(get_current_user)):
+    admin = is_admin(user)
+    user_id = user.get("id", "anonymous")
+
     if db.is_connected():
         from app.db.repositories import searches as search_repo
         db_searches = await search_repo.list_all(db.pool)
@@ -111,35 +121,44 @@ async def list_searches():
         for s in db_searches:
             if s["id"] not in active_ids:
                 merged.append(s)
+        if not admin:
+            merged = [s for s in merged if _is_owned_by(s.get("user_id"), user)]
         merged.sort(key=lambda s: s.get("created_at", ""), reverse=True)
         return {"searches": merged, "total": len(merged)}
 
     searches = search_registry.list_all()
+    if not admin:
+        searches = [s for s in searches if _is_owned_by(s.get("user_id"), user)]
     return {"searches": searches, "total": len(searches)}
 
 
 @router.get("/{search_id}")
-async def get_search(search_id: int):
+async def get_search(search_id: int, user: dict = Depends(get_current_user)):
     entry = search_registry.get(search_id)
     if entry:
+        require_owner_or_admin(entry.get("user_id"), user)
         return search_registry.get_response(search_id)
 
     if db.is_connected():
         from app.db.repositories import searches as search_repo
         db_entry = await search_repo.get(db.pool, search_id)
         if db_entry:
+            require_owner_or_admin(db_entry.get("user_id"), user)
             return db_entry
 
     raise HTTPException(404, "Search not found")
 
 
 @router.get("/{search_id}/stream")
-async def stream_search(search_id: int):
+async def stream_search(search_id: int, user: dict = Depends(get_current_user)):
     from app.services.progress_tracker import tracker
 
+    entry = search_registry.get(search_id)
     progress = tracker.get(search_id)
-    if not progress and search_registry.get(search_id) is None:
+    if not progress and entry is None:
         raise HTTPException(404, "Search not found")
+    if entry:
+        require_owner_or_admin(entry.get("user_id"), user)
 
     async def event_generator():
         entry = search_registry.get(search_id)
@@ -171,10 +190,14 @@ async def stream_search(search_id: int):
 
 
 @router.patch("/{search_id}/pin")
-async def pin_search(search_id: int, body: dict):
+async def pin_search(search_id: int, body: dict, user: dict = Depends(get_current_user)):
     if not db.is_connected():
         raise HTTPException(503, "Base de datos no disponible")
     from app.db.repositories import searches as search_repo
+    db_entry = await search_repo.get(db.pool, search_id)
+    if not db_entry:
+        raise HTTPException(404, "Search not found")
+    require_owner_or_admin(db_entry.get("user_id"), user)
     pinned = bool(body.get("pinned", False))
     custom_name = body.get("custom_name") or None
     ok = await search_repo.pin_search(db.pool, search_id, pinned, custom_name)
@@ -184,10 +207,11 @@ async def pin_search(search_id: int, body: dict):
 
 
 @router.post("/{search_id}/cancel")
-async def cancel_search(search_id: int):
+async def cancel_search(search_id: int, user: dict = Depends(get_current_user)):
     entry = search_registry.get(search_id)
     if not entry:
         raise HTTPException(404, "Search not found")
+    require_owner_or_admin(entry.get("user_id"), user)
     entry["abort"] = True
     return {"status": "cancelling"}
 
@@ -195,10 +219,7 @@ async def cancel_search(search_id: int):
 @router.delete("")
 async def clear_all_searches(user: dict = Depends(get_current_user)):
     """Admin-only: delete all searches, places and usage history."""
-    from app.auth.dependencies import _get_admin_emails
-    admins = _get_admin_emails()
-    if admins and user.get("email", "").lower() not in admins:
-        raise HTTPException(403, "Solo el administrador puede borrar el historial")
+    require_admin(user, "Solo el administrador puede borrar el historial")
     if not db.is_connected():
         raise HTTPException(503, "Base de datos no disponible")
 

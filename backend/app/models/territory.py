@@ -13,6 +13,17 @@ class GeocodeRequest(BaseModel):
     radius_m: int = 500
 
 
+class GeocodePlaceRequest(BaseModel):
+    place_id: str
+    radius_m: int = 500
+
+
+class AutocompleteSuggestion(BaseModel):
+    place_id: str
+    main_text: str
+    secondary_text: str = ""
+
+
 class PolygonRequest(BaseModel):
     coordinates: list[list[float]]
     radius_m: int = 500

@@ -61,11 +61,26 @@ def _extract_emails(html: str) -> set[str]:
     return {e.lower().rstrip(".") for e in raw if _is_valid_email(e)}
 
 
+_MAX_REDIRECTS = 5
+
+
 async def _fetch_page(client: httpx.AsyncClient, url: str) -> str | None:
+    """Fetch a page, manually following redirects and re-validating each hop
+    against _is_safe_url so a malicious site can't redirect into a private IP."""
     try:
-        resp = await client.get(url, headers=HEADERS, follow_redirects=True, timeout=8.0)
-        if resp.status_code == 200 and "text/html" in resp.headers.get("content-type", ""):
-            return resp.text[:200_000]
+        for _ in range(_MAX_REDIRECTS + 1):
+            if not _is_safe_url(url):
+                return None
+            resp = await client.get(url, headers=HEADERS, follow_redirects=False, timeout=8.0)
+            if resp.is_redirect:
+                location = resp.headers.get("location")
+                if not location:
+                    return None
+                url = urljoin(url, location)
+                continue
+            if resp.status_code == 200 and "text/html" in resp.headers.get("content-type", ""):
+                return resp.text[:200_000]
+            return None
     except Exception:
         pass
     return None

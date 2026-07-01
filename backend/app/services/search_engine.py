@@ -71,6 +71,7 @@ class SearchRegistry:
         bounds_dict = bounds.model_dump() if hasattr(bounds, "model_dump") else bounds
         return {
             "id": entry["id"],
+            "user_id": entry.get("user_id"),
             "keywords": entry["keywords"],
             "radius_m": entry["radius_m"],
             "status": entry["status"],

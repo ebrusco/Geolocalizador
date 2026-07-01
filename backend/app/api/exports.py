@@ -1,11 +1,12 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sse_starlette.sse import EventSourceResponse
 
 import app.database as db
+from app.auth.dependencies import get_current_user, require_owner_or_admin
 from app.services.search_engine import search_registry
 from app.services.export import generate_csv, generate_xlsx, export_filename
 from app.services.email_scraper import scrape_emails_for_search
@@ -31,10 +32,11 @@ async def _get_search_data(search_id: int) -> tuple[dict | None, list[dict], str
 
 
 @router.get("/searches/{search_id}/export")
-async def export_search(search_id: int, format: str = "xlsx"):
+async def export_search(search_id: int, format: str = "xlsx", user: dict = Depends(get_current_user)):
     entry, places, territorio = await _get_search_data(search_id)
     if not entry:
         raise HTTPException(404, "Search not found")
+    require_owner_or_admin(entry.get("user_id"), user)
 
     if entry["status"] != "completed":
         raise HTTPException(400, "Search not completed yet")
@@ -62,10 +64,11 @@ async def export_search(search_id: int, format: str = "xlsx"):
 
 
 @router.post("/searches/{search_id}/scrape-emails")
-async def scrape_emails(search_id: int):
+async def scrape_emails(search_id: int, user: dict = Depends(get_current_user)):
     entry = search_registry.get(search_id)
     if not entry:
         raise HTTPException(404, "Search not found (email scraping requires active search)")
+    require_owner_or_admin(entry.get("user_id"), user)
 
     if entry["status"] != "completed":
         raise HTTPException(400, "Search not completed yet")

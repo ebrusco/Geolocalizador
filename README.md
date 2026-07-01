@@ -281,16 +281,18 @@ https://geolocalizador-production-16cb.up.railway.app
 ### Variables de entorno en Railway
 
 ```env
-GOOGLE_API_KEY=AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA
-DATABASE_URL=postgresql://neondb_owner:npg_nGWpi76kMJNh@ep-lingering-wave-ac0gw483.sa-east-1.aws.neon.tech/neondb?sslmode=require
-NEON_AUTH_URL=https://ep-lingering-wave-ac0gw483.neonauth.sa-east-1.aws.neon.tech/neondb/auth
-ALLOWED_EMAILS=bruscofacundo1@gmail.com
+GOOGLE_API_KEY=<server-side Places/Geocoding key — ver Google Cloud Console>
+DATABASE_URL=<connection string de Neon — ver dashboard de Neon>
+NEON_AUTH_URL=<URL de Neon Auth — ver dashboard de Neon>
+ALLOWED_EMAILS=<emails admin separados por coma>
 ENVIRONMENT=production
 PORT=8000
 FRONTEND_URL=https://geolocalizador-production-16cb.up.railway.app
-VITE_GOOGLE_MAPS_KEY=AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA
-VITE_NEON_AUTH_URL=https://ep-lingering-wave-ac0gw483.neonauth.sa-east-1.aws.neon.tech/neondb/auth
+VITE_GOOGLE_MAPS_KEY=<Maps JS key — ver Google Cloud Console>
+VITE_NEON_AUTH_URL=<misma URL que NEON_AUTH_URL>
 ```
+
+> Las claves reales viven solo en las variables de entorno de Railway/Neon, nunca en el repo.
 
 > **Nota**: `VITE_GOOGLE_MAPS_KEY` y `VITE_NEON_AUTH_URL` son build args — se inyectan al frontend durante la compilación via el Dockerfile.
 
@@ -312,9 +314,9 @@ PostgreSQL en **Neon** (free tier). Railway no incluye PostgreSQL gratis.
 
 ### Cuenta de acceso
 
-- **Email**: bruscofacundo1@gmail.com
-- **Contraseña**: ProspectoAI2024!
+- **Email**: ver `ALLOWED_EMAILS` en Railway
 - **Rol**: Admin (puede gestionar whitelist de emails)
+- La contraseña no se documenta en el repo. Si fue rotada recientemente, pedírsela al admin por un canal seguro (no Git).
 
 ### Cómo re-deployar
 
@@ -497,7 +499,7 @@ ProspectoAI usa principalmente **SearchTextRequest**. Con ~20 requests por hexá
 | **GitHub** | Repositorio de código | ebrusco — github.com/ebrusco/Geolocalizador |
 | **Railway** | Hosting del backend + frontend | ebrusco — geolocalizador-production-16cb.up.railway.app |
 | **Neon** | PostgreSQL serverless + Auth | ep-lingering-wave-ac0gw483 (sa-east-1) |
-| **Google Cloud** | Places API, Geocoding API, Maps JS API | Proyecto con API key AIzaSyBCNin0CLdXBqxu-Gssuv6QMvHSO_tM8lA |
+| **Google Cloud** | Places API, Geocoding API, Maps JS API | Ver `GOOGLE_API_KEY` / `VITE_GOOGLE_MAPS_KEY` en Railway |
 
 ---
 

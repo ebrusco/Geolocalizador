@@ -1,16 +1,12 @@
 from shapely.geometry import Polygon, shape
 
 from app.models.territory import Bounds
-from app.services.geocoding_client import geocode
+from app.services.geocoding_client import geocode, autocomplete, get_place_details
 from app.services.nominatim_client import get_polygon
 from app.services.grid import generate_cells, generate_cells_from_geojson, radius_to_h3_resolution
 
 
-async def geocode_and_grid(query: str, radius_m: int):
-    nombre, bounds, center = await geocode(query)
-
-    nominatim = await get_polygon(query)
-
+def _build_grid_result(nombre: str, bounds: Bounds, center: dict, radius_m: int, nominatim: dict | None):
     if nominatim and nominatim["geojson"]:
         geojson = nominatim["geojson"]
         resolution, cells = generate_cells_from_geojson(geojson, radius_m)
@@ -35,6 +31,24 @@ async def geocode_and_grid(query: str, radius_m: int):
         "polygon": polygon_coords,
         "geojson": nominatim["geojson"] if nominatim else None,
     }
+
+
+async def geocode_and_grid(query: str, radius_m: int):
+    nombre, bounds, center = await geocode(query)
+    nominatim = await get_polygon(query)
+    return _build_grid_result(nombre, bounds, center, radius_m, nominatim)
+
+
+async def autocomplete_territory(query: str):
+    return await autocomplete(query)
+
+
+async def geocode_place_and_grid(place_id: str, radius_m: int):
+    details = await get_place_details(place_id)
+    nominatim = await get_polygon(details["nombre"], details["country_code"])
+    return _build_grid_result(
+        details["nombre"], details["bounds"], details["center"], radius_m, nominatim,
+    )
 
 
 def polygon_and_grid(coordinates: list[list[float]], radius_m: int):

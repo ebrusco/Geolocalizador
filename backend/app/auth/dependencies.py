@@ -37,6 +37,32 @@ def _get_admin_emails() -> set[str]:
     return {e.strip().lower() for e in settings.allowed_emails.split(",") if e.strip()}
 
 
+def is_admin(user: dict) -> bool:
+    """True if user is an admin, or if auth is fully disabled (local dev)."""
+    admins = _get_admin_emails()
+    if not admins:
+        return not settings.neon_auth_url
+    return user.get("email", "").lower() in admins
+
+
+def require_admin(user: dict, message: str = "Solo el administrador puede realizar esta acción"):
+    admins = _get_admin_emails()
+    if not admins:
+        if not settings.neon_auth_url:
+            return  # auth fully disabled (local dev) — no concept of admin
+        raise HTTPException(403, "No hay administradores configurados (ALLOWED_EMAILS vacío)")
+    if user.get("email", "").lower() not in admins:
+        raise HTTPException(403, message)
+
+
+def require_owner_or_admin(resource_user_id: str | None, user: dict,
+                            message: str = "No tenés acceso a este recurso"):
+    if is_admin(user):
+        return
+    if resource_user_id and resource_user_id != user.get("id"):
+        raise HTTPException(403, message)
+
+
 async def _get_allowed_emails() -> set[str]:
     global _allowed_cache
     now = time.time()

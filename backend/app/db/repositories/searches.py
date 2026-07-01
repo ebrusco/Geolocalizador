@@ -6,14 +6,14 @@ import asyncpg
 
 async def create(pool: asyncpg.Pool, territorio_nombre: str, keywords: list[str],
                  radius_m: int, bounds: dict | None, geojson: dict | None,
-                 field_mask: str) -> int:
+                 field_mask: str, user_id: str = "") -> int:
     row = await pool.fetchrow(
-        """INSERT INTO searches (territorio_nombre, keywords, radius_m, bounds, geojson, field_mask)
-           VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6) RETURNING id""",
+        """INSERT INTO searches (territorio_nombre, keywords, radius_m, bounds, geojson, field_mask, user_id)
+           VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6, $7) RETURNING id""",
         territorio_nombre, keywords, radius_m,
         json.dumps(bounds) if bounds else None,
         json.dumps(geojson) if geojson else None,
-        field_mask,
+        field_mask, user_id,
     )
     return row["id"]
 
@@ -36,7 +36,7 @@ async def get(pool: asyncpg.Pool, search_id: int) -> dict | None:
     row = await pool.fetchrow(
         """SELECT id, territorio_nombre, custom_name, pinned, keywords, radius_m,
                   bounds, geojson, field_mask, status, total_cells, completed_cells,
-                  total_places, started_at, completed_at, created_at
+                  total_places, started_at, completed_at, created_at, user_id
            FROM searches WHERE id = $1""",
         search_id,
     )
@@ -47,7 +47,7 @@ async def list_all(pool: asyncpg.Pool) -> list[dict]:
     rows = await pool.fetch(
         """SELECT id, territorio_nombre, custom_name, pinned, keywords, radius_m,
                   status, total_cells, completed_cells, total_places,
-                  started_at, completed_at, created_at
+                  started_at, completed_at, created_at, user_id
            FROM searches ORDER BY created_at DESC"""
     )
     return [_row_to_response(r) for r in rows]
