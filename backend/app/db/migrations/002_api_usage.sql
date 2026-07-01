@@ -6,7 +6,5 @@ CREATE TABLE IF NOT EXISTS api_usage (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_api_usage_month
-    ON api_usage (date_trunc('month', created_at));
 CREATE INDEX IF NOT EXISTS idx_api_usage_created
     ON api_usage (created_at DESC);

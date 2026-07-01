@@ -1,9 +1,12 @@
+import logging
 import ssl as ssl_mod
 from pathlib import Path
 
 import asyncpg
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 pool: asyncpg.Pool | None = None
 
@@ -45,4 +48,8 @@ async def run_migrations():
     migrations_dir = Path(__file__).parent / "db" / "migrations"
     for migration in sorted(migrations_dir.glob("*.sql")):
         sql = migration.read_text(encoding="utf-8")
-        await pool.execute(sql)
+        try:
+            await pool.execute(sql)
+        except Exception as e:
+            # A single broken migration must not block the ones after it.
+            logger.error("Migration %s failed: %s", migration.name, e)
