@@ -8,7 +8,7 @@ from sse_starlette.sse import EventSourceResponse
 import app.database as db
 from app.auth.dependencies import get_current_user, is_admin, require_admin, require_owner_or_admin
 from app.models.search import SearchRequest, SearchResponse, EstimateRequest
-from app.services.search_engine import search_registry, run_search
+from app.services.search_engine import search_registry, run_search, _persist_search
 from app.services.grid import generate_cells, generate_cells_from_geojson
 from app.services.usage_tracker import usage_tracker, COST_PER_CALL_USD
 
@@ -187,6 +187,18 @@ async def stream_search(search_id: int, user: dict = Depends(get_current_user)):
                 yield {"event": "ping", "data": ""}
 
     return EventSourceResponse(event_generator())
+
+
+@router.post("/{search_id}/resync")
+async def resync_search(search_id: int, user: dict = Depends(get_current_user)):
+    """Admin-only debug tool: re-attempt persisting an in-memory search to the DB
+    and surface the real error if it fails (normally swallowed/logged only)."""
+    require_admin(user)
+    entry = search_registry.get(search_id)
+    if not entry:
+        raise HTTPException(404, "Search not in memory")
+    error = await _persist_search(search_id, entry)
+    return {"persisted": error is None, "error": error, "total_places": entry["total_places"]}
 
 
 @router.patch("/{search_id}/pin")

@@ -23,9 +23,13 @@ async def lifespan(app: FastAPI):
             await run_migrations()
             from app.db.repositories.keyword_profiles import seed_defaults
             from app.db.repositories.allowed_emails import seed_from_env
+            from app.db.repositories.searches import mark_orphaned_as_failed
             if db.pool:
                 await seed_defaults(db.pool)
                 await seed_from_env(db.pool, settings.allowed_emails)
+                orphaned = await mark_orphaned_as_failed(db.pool)
+                if orphaned:
+                    print(f"Marked {orphaned} orphaned search(es) as failed (interrupted by restart).")
             print("Database connected and migrations applied.")
         except Exception as e:
             print(f"Warning: DB not connected ({e}). Running in-memory mode.")

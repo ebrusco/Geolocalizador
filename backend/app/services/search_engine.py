@@ -95,15 +95,28 @@ _rate_limiter = RateLimiter(
 )
 
 
-async def _persist_search(search_id: int, entry: dict):
-    """Persist completed search results to database."""
+FLUSH_EVERY_CELLS = 15
+
+
+async def _flush_batch(search_id: int, entry: dict, new_places: list[dict]) -> str | None:
+    """Persist newly-found places plus current progress. Called periodically during a
+    search (not just at the end) so a mid-search restart loses at most a few cells of
+    progress instead of the whole search. Returns an error message on failure, else None."""
     if not db.is_connected():
-        return
+        return "db not connected"
 
     from app.db.repositories import searches as search_repo
     from app.db.repositories import places as places_repo
 
     try:
+        if new_places:
+            place_ids = await places_repo.upsert_batch(db.pool, new_places)
+            place_keyword_pairs = [
+                (pid, new_places[i].get("keyword", ""))
+                for i, pid in enumerate(place_ids)
+            ]
+            await places_repo.add_search_results_batch(db.pool, search_id, place_keyword_pairs)
+
         await search_repo.update_status(
             db.pool, search_id,
             status=entry["status"],
@@ -113,15 +126,17 @@ async def _persist_search(search_id: int, entry: dict):
             started_at=entry["started_at"],
             completed_at=entry["completed_at"],
         )
-
-        place_ids = await places_repo.upsert_batch(db.pool, entry["places"])
-        place_keyword_pairs = [
-            (pid, entry["places"][i].get("keyword", ""))
-            for i, pid in enumerate(place_ids)
-        ]
-        await places_repo.add_search_results_batch(db.pool, search_id, place_keyword_pairs)
+        return None
     except Exception as e:
-        logger.error("Failed to persist search %s: %s", search_id, e)
+        logger.exception("Failed to flush progress for search %s", search_id)
+        return f"{type(e).__name__}: {e}"
+
+
+async def _persist_search(search_id: int, entry: dict) -> str | None:
+    """Full reconciliation: (re)persist every place plus final status. Idempotent thanks to
+    upsert ON CONFLICT, so it's safe to call as a finalization step (even if some periodic
+    _flush_batch calls failed) or as a manual recovery/resync action."""
+    return await _flush_batch(search_id, entry, entry["places"])
 
 
 async def run_search(search_id: int):
@@ -150,18 +165,13 @@ async def run_search(search_id: int):
     entry["started_at"] = datetime.now(timezone.utc).isoformat()
 
     if db.is_connected():
-        from app.db.repositories import searches as search_repo
-        try:
-            await search_repo.update_status(
-                db.pool, search_id,
-                status="running",
-                total_cells=total_tasks,
-                started_at=entry["started_at"],
-            )
-        except Exception:
-            pass
+        error = await _flush_batch(search_id, entry, [])
+        if error:
+            logger.error("Could not mark search %s as running in DB: %s", search_id, error)
 
     seen: set[str] = set()
+    unflushed: list[dict] = []
+    cells_since_flush = 0
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -171,7 +181,7 @@ async def run_search(search_id: int):
                         entry["status"] = "cancelled"
                         entry["completed_at"] = datetime.now(timezone.utc).isoformat()
                         await tracker.fail(search_id, "Cancelled by user")
-                        await _persist_search(search_id, entry)
+                        await _flush_batch(search_id, entry, unflushed)
                         return
 
                     new_count = 0
@@ -194,6 +204,7 @@ async def run_search(search_id: int):
                                 continue
 
                         entry["places"].append(normalized)
+                        unflushed.append(normalized)
 
                         marker_data = {
                             "nombre": normalized["nombre"],
@@ -210,19 +221,25 @@ async def run_search(search_id: int):
                     await tracker.emit_cell_done(search_id, new_count)
                     entry["completed_cells"] += 1
                     entry["total_places"] = len(entry["places"])
+                    cells_since_flush += 1
+
+                    if cells_since_flush >= FLUSH_EVERY_CELLS:
+                        await _flush_batch(search_id, entry, unflushed)
+                        unflushed = []
+                        cells_since_flush = 0
 
         entry["status"] = "completed"
         entry["completed_at"] = datetime.now(timezone.utc).isoformat()
         entry["total_places"] = len(entry["places"])
         await tracker.complete(search_id)
 
-        await _persist_search(search_id, entry)
+        await _flush_batch(search_id, entry, unflushed)
 
     except Exception as e:
         entry["status"] = "failed"
         entry["completed_at"] = datetime.now(timezone.utc).isoformat()
         await tracker.fail(search_id, str(e))
-        await _persist_search(search_id, entry)
+        await _flush_batch(search_id, entry, unflushed)
     finally:
         await asyncio.sleep(2)
         tracker.cleanup(search_id)

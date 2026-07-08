@@ -62,6 +62,18 @@ async def pin_search(pool: asyncpg.Pool, search_id: int,
     return result == "UPDATE 1"
 
 
+async def mark_orphaned_as_failed(pool: asyncpg.Pool) -> int:
+    """On startup, the in-memory registry is empty — any search still marked
+    pending/running belongs to a process that no longer exists (killed by a
+    restart mid-search) and will never progress further. Mark it failed instead
+    of leaving it stuck forever."""
+    result = await pool.execute(
+        """UPDATE searches SET status='failed', completed_at=NOW()
+           WHERE status IN ('pending', 'running')""",
+    )
+    return int(result.split()[-1]) if result else 0
+
+
 def _convert_value(v):
     if isinstance(v, Decimal):
         return float(v)
