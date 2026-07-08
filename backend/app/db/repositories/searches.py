@@ -1,7 +1,12 @@
 import json
+from datetime import datetime
 from decimal import Decimal
 
 import asyncpg
+
+
+def _parse_dt(v: str | None) -> datetime | None:
+    return datetime.fromisoformat(v) if v else None
 
 
 async def create(pool: asyncpg.Pool, territorio_nombre: str, keywords: list[str],
@@ -25,10 +30,10 @@ async def update_status(pool: asyncpg.Pool, search_id: int, *,
                         completed_at: str | None = None):
     await pool.execute(
         """UPDATE searches SET status=$2, total_cells=$3, completed_cells=$4,
-           total_places=$5, started_at=$6::timestamptz, completed_at=$7::timestamptz
+           total_places=$5, started_at=$6, completed_at=$7
            WHERE id=$1""",
         search_id, status, total_cells, completed_cells, total_places,
-        started_at, completed_at,
+        _parse_dt(started_at), _parse_dt(completed_at),
     )
 
 
