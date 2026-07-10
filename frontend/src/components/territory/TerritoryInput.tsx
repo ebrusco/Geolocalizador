@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Search, Loader2, MapPin } from "lucide-react";
+import { Search, Loader2, MapPin, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
 import {
   autocompleteTerritory,
   geocodeTerritoryByPlaceId,
@@ -8,12 +8,22 @@ import {
 import { useTerritoryStore } from "../../stores/territoryStore";
 import { useUIStore } from "../../stores/uiStore";
 
+const CPA_PREFIXES: [string, string][] = [
+  ["A", "Salta"], ["B", "Buenos Aires"], ["C", "CABA"], ["D", "San Luis"],
+  ["E", "Entre Ríos"], ["F", "La Rioja"], ["G", "Santiago del Estero"], ["H", "Chaco"],
+  ["J", "San Juan"], ["K", "Catamarca"], ["L", "La Pampa"], ["M", "Mendoza"],
+  ["N", "Misiones"], ["P", "Formosa"], ["Q", "Neuquén"], ["R", "Río Negro"],
+  ["S", "Santa Fe"], ["T", "Tucumán"], ["U", "Chubut"], ["V", "Tierra del Fuego"],
+  ["W", "Corrientes"], ["X", "Córdoba"], ["Y", "Jujuy"], ["Z", "Santa Cruz"],
+];
+
 export function TerritoryInput() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<TerritorySuggestion[]>([]);
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [loading, setLoading] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { setTerritory, radiusM } = useTerritoryStore();
   const addToast = useUIStore((s) => s.addToast);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -144,6 +154,35 @@ export function TerritoryInput() {
             </li>
           ))}
         </ul>
+      )}
+
+      <button
+        type="button"
+        onClick={() => { setShowHelp((v) => !v); setOpen(false); }}
+        className="mt-1.5 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600
+                   cursor-pointer bg-transparent border-none transition-colors"
+      >
+        <HelpCircle size={12} />
+        ¿Cómo busco por código postal?
+        {showHelp ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+      </button>
+
+      {showHelp && (
+        <div className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <p>
+            Usá el formato completo (CPA): una letra de provincia seguida del código de
+            4 dígitos, ej. <span className="font-mono font-semibold text-slate-800">B1876</span> para
+            Bernal. Los códigos de solo 4 números (formato viejo) no funcionan.
+          </p>
+          <p className="mt-2 font-medium text-slate-500">Prefijos por provincia:</p>
+          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
+            {CPA_PREFIXES.map(([letter, name]) => (
+              <span key={letter}>
+                <span className="font-mono font-semibold text-slate-800">{letter}</span> {name}
+              </span>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
