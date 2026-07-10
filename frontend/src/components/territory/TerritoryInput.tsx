@@ -111,21 +111,23 @@ export function TerritoryInput() {
 
   return (
     <div className="relative" ref={containerRef}>
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
-        {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+          {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => handleInputChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          placeholder="Buscar localidad, ciudad o código postal..."
+          className="w-full rounded-full pl-9 pr-4 py-2.5 text-sm border border-slate-200
+                     bg-white outline-none focus:border-[#4285F4] focus:ring-2 focus:ring-[#4285F4]/10
+                     placeholder:text-slate-400"
+          style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+        />
       </div>
-      <input
-        type="text"
-        value={query}
-        onChange={(e) => handleInputChange(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
-        placeholder="Buscar localidad, ciudad o código postal..."
-        className="w-full rounded-full pl-9 pr-4 py-2.5 text-sm border border-slate-200
-                   bg-white outline-none focus:border-[#4285F4] focus:ring-2 focus:ring-[#4285F4]/10
-                   placeholder:text-slate-400"
-        style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
-      />
 
       {open && suggestions.length > 0 && (
         <ul
