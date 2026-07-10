@@ -159,16 +159,16 @@ export function TerritoryInput() {
       <button
         type="button"
         onClick={() => { setShowHelp((v) => !v); setOpen(false); }}
-        className="mt-1.5 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600
+        className="mt-3 flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600
                    cursor-pointer bg-transparent border-none transition-colors"
       >
-        <HelpCircle size={12} />
-        ¿Cómo busco por código postal?
-        {showHelp ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+        <HelpCircle size={12} className="shrink-0" />
+        <span>¿Cómo busco por código postal?</span>
+        {showHelp ? <ChevronUp size={12} className="shrink-0" /> : <ChevronDown size={12} className="shrink-0" />}
       </button>
 
       {showHelp && (
-        <div className="mt-1.5 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+        <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
           <p>
             Usá el formato completo (CPA): una letra de provincia seguida del código de
             4 dígitos, ej. <span className="font-mono font-semibold text-slate-800">B1876</span> para
