@@ -1,3 +1,5 @@
+import re
+
 import httpx
 
 from app.config import settings
@@ -6,6 +8,10 @@ from app.models.territory import Bounds
 
 PLACES_AUTOCOMPLETE_URL = "https://places.googleapis.com/v1/places:autocomplete"
 PLACES_DETAILS_URL = "https://places.googleapis.com/v1/places"
+
+# Matches an Argentine postal code: optional province letter (CPA) + 3-5 digits + optional letter suffix.
+# e.g. "1876", "B1876", "B1876AAA"
+_POSTAL_CODE_RE = re.compile(r"^[A-Za-z]?\d{3,5}[A-Za-z]{0,3}$")
 
 
 async def geocode(query: str) -> tuple[str, Bounds, dict]:
@@ -41,12 +47,19 @@ async def geocode(query: str) -> tuple[str, Bounds, dict]:
 
 
 async def autocomplete(query: str) -> list[dict]:
-    """Place autocomplete suggestions, worldwide. Returns list of
+    """Place autocomplete suggestions. Worldwide for regular place names; when the
+    input looks like a postal code, restricted to Argentina so a bare "1876" resolves
+    to Bernal instead of an unrelated match in Brazil or Sweden. Returns list of
     {place_id, main_text, secondary_text}."""
+    if _POSTAL_CODE_RE.match(query.strip()):
+        body = {"input": query, "includedPrimaryTypes": ["postal_code"], "includedRegionCodes": ["AR"]}
+    else:
+        body = {"input": query, "includedPrimaryTypes": ["locality", "postal_code", "administrative_area_level_1", "administrative_area_level_2", "sublocality"]}
+
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             PLACES_AUTOCOMPLETE_URL,
-            json={"input": query, "includedPrimaryTypes": ["locality", "postal_code", "administrative_area_level_1", "administrative_area_level_2", "sublocality"]},
+            json=body,
             headers={
                 "X-Goog-Api-Key": settings.google_api_key,
                 "Content-Type": "application/json",
